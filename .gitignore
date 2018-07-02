@@ -1,0 +1,6 @@
+# Gradle
+.gradle/
+gradle.properties
+build/
+# GFM Viewer
+.*.md.html
