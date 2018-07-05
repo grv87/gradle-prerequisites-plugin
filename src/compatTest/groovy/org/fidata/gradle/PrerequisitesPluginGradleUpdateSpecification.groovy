@@ -19,23 +19,29 @@
  */
 package org.fidata.gradle
 
-import org.gradle.api.Task
 import spock.lang.Specification
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
-import org.gradle.api.Project
-import org.gradle.testfixtures.ProjectBuilder
+import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.BuildResult
+import java.nio.file.Files
 import spock.lang.Unroll
 
 /**
  * Specification for {@link org.fidata.gradle.PrerequisitesPlugin} class
+ * for updating Gradle dependencies
  */
-class PrerequisitesPluginSpecification extends Specification {
+class PrerequisitesPluginGradleUpdateSpecification extends Specification {
   // fields
+  @Rule
+  final TemporaryFolder repoDir = new TemporaryFolder()
+  @Rule
+  final TemporaryFolder dependeeProjectDir = new TemporaryFolder()
   @Rule
   final TemporaryFolder testProjectDir = new TemporaryFolder()
 
-  Project project
+  Project dependeeProject = ProjectBuilder.builder().withProjectDir(dependeeProjectDir.root).build()
+  Project project = ProjectBuilder.builder().withProjectDir(testProjectDir.root).build()
 
   // fixture methods
 
@@ -44,7 +50,23 @@ class PrerequisitesPluginSpecification extends Specification {
 
   // run before every feature method
   void setup() {
-    project = ProjectBuilder.builder().withProjectDir(testProjectDir.root).build()
+
+    project =
+      buildFile << '''\
+      plugins {
+        id 'org.fidata.plugin'
+      }
+    '''.stripIndent()
+
+    settingsFile << '''\
+      enableFeaturePreview('STABLE_PUBLISHING')
+    '''.stripIndent()
+
+    propertiesFile.withPrintWriter { PrintWriter printWriter ->
+      EXTRA_PROPERTIES.each { String key, String value ->
+        printWriter.println "$key=$value"
+      }
+    }
   }
 
   // run after every feature method
@@ -109,4 +131,12 @@ class PrerequisitesPluginSpecification extends Specification {
   }
 
   // helper methods
+  protected BuildResult build(String... arguments) {
+    GradleRunner.create()
+      .withGradleVersion(System.getProperty('compat.gradle.version'))
+      .withProjectDir(testProjectDir)
+      .withArguments([*arguments, '--stacktrace', '--refresh-dependencies'])
+      .withPluginClasspath()
+      .build()
+  }
 }

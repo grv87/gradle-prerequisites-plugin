@@ -1,6 +1,9 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+com.fasterxml.jackson.core:jackson-annotations:2.9.0
+com.fasterxml.jackson.core:jackson-core:2.9.5
+com.fasterxml.jackson.core:jackson-databind:2.9.5
 com.github.ben-manes:gradle-versions-plugin:0.20.0
 com.ofg:uptodate-gradle-plugin:1.6.3
 com.thoughtworks.xstream:xstream:1.4.10
@@ -13,6 +16,8 @@ junit:junit:4.12
 net.sf.ezmorph:ezmorph:1.0.6
 net.sf.json-lib:json-lib:2.3
 net.sourceforge.nekohtml:nekohtml:1.9.16
+org.ajoberstar.stutter:org.ajoberstar.stutter.gradle.plugin:0.4.0
+org.ajoberstar:gradle-stutter:0.4.0
 org.apache.httpcomponents:httpclient:4.2.1
 org.apache.httpcomponents:httpcore:4.2.1
 org.codehaus.gpars:gpars:1.2.1
