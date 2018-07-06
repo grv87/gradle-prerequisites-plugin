@@ -20,12 +20,10 @@
 package org.fidata.gradle
 
 import spock.lang.Specification
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.BuildResult
-import java.nio.file.Files
 import spock.lang.Unroll
+import java.nio.file.Files
 
 /**
  * Specification for {@link org.fidata.gradle.PrerequisitesPlugin} class
@@ -33,15 +31,13 @@ import spock.lang.Unroll
  */
 class PrerequisitesPluginGradleUpdateSpecification extends Specification {
   // fields
-  @Rule
-  final TemporaryFolder repoDir = new TemporaryFolder()
-  @Rule
-  final TemporaryFolder dependeeProjectDir = new TemporaryFolder()
-  @Rule
-  final TemporaryFolder testProjectDir = new TemporaryFolder()
+  boolean success = false
 
-  Project dependeeProject = ProjectBuilder.builder().withProjectDir(dependeeProjectDir.root).build()
-  Project project = ProjectBuilder.builder().withProjectDir(testProjectDir.root).build()
+  final File repoDir = Files.createTempDirectory('compatTest').toFile()
+  final File dependeeProjectDir = Files.createTempDirectory('compatTest').toFile()
+  final File testProjectDir = Files.createTempDirectory('compatTest').toFile()
+
+  File buildFile
 
   // fixture methods
 
@@ -50,84 +46,137 @@ class PrerequisitesPluginGradleUpdateSpecification extends Specification {
 
   // run before every feature method
   void setup() {
-
-    project =
-      buildFile << '''\
+    buildFile = new File(testProjectDir, 'build.gradle')
+    buildFile << """\
       plugins {
-        id 'org.fidata.plugin'
+        id 'java'
+        id 'org.fidata.prerequisites'
       }
-    '''.stripIndent()
-
-    settingsFile << '''\
-      enableFeaturePreview('STABLE_PUBLISHING')
-    '''.stripIndent()
-
-    propertiesFile.withPrintWriter { PrintWriter printWriter ->
-      EXTRA_PROPERTIES.each { String key, String value ->
-        printWriter.println "$key=$value"
+      
+      repositories {
+        maven {
+          url ${ repoDir.toString().inspect() }
+        }
       }
-    }
+    """.stripIndent()
   }
 
   // run after every feature method
-  // void cleanup() { }
+  void cleanup() {
+    /*
+     * WORKAROUND:
+     * Jenkins doesn't set CI environment variable
+     * https://issues.jenkins-ci.org/browse/JENKINS-36707
+     * <grv87 2018-06-27>
+     */
+    if (success || System.getenv().with { containsKey('CI') || containsKey('JENKINS_URL') }) {
+      repoDir.delete()
+      dependeeProjectDir.delete()
+      testProjectDir.delete()
+    }
+  }
 
   // run after the last feature method
   // void cleanupSpec() { }
 
   // feature methods
 
-  @Unroll
-  void 'provides #task task'() {
-    when: 'plugin is applied'
-    project.apply plugin: 'org.fidata.prerequisites'
+  void 'locks build tools configurations'() {
+    given: 'there is 1.0 dependee version'
+    releaseDependee '1.0'
 
-    then: '#task task exists'
-    project.tasks.getByName(task)
+    and: 'testCompile configuration includes dependee'
+    buildFile << '''\
+      dependencies {
+        testCompile 'com.example:dependee:latest.release'
+      }
+    '''
 
-    where:
-    task << [
-      'prerequisitesInstall', 'prerequisitesUpdate', 'prerequisitesOutdated',
-      'dependenciesInstall', 'dependenciesUpdate',
-      'buildToolsInstall', 'buildToolsUpdate',
-    ]
+    when: 'buildToolsUpdate --write-locks is run'
+    build 'buildToolsUpdate', '--write-locks'
+
+    then: 'testCompile configuration contains dependee 1.0 locked version'
+    new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains 'com.example:dependee:1.0'
+
+    (success = true) != null
   }
 
-  @Unroll
-  void 'integrates update task with #pluginId'() {
-    given: '#pluginId is applied'
-    project.apply plugin: pluginId
+  void 'locks dependencies configurations'() {
+    given: 'there is 1.0 dependee version'
+    releaseDependee '1.0'
 
-    when: 'plugin is applied'
-    project.apply plugin: 'org.fidata.prerequisites'
+    and: 'compile configuration includes dependee'
+    buildFile << '''\
+      dependencies {
+        compile 'com.example:dependee:latest.release'
+      }
+    '''
 
-    then: '#updateTaskName task depends on pluginTaskName task'
-    Task updateTask = project.tasks[updateTaskName]
-    updateTask.taskDependencies.getDependencies(updateTask).contains(project.tasks[pluginTaskName])
+    when: 'dependenciesUpdate is run'
+    build 'dependenciesUpdate'
 
-    where:
-    pluginId                 | pluginTaskName      | prerequisitiesType
-    'org.ajoberstar.stutter' | 'stutterWriteLocks' | 'buildTools'
-    updateTaskName = prerequisitiesType + "Update"
+    then: 'compile configuration contains dependee 1.0 locked version'
+    new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains 'com.example:dependee:1.0'
+
+    (success = true) != null
   }
 
-  @Unroll
-  void 'integrates outdated task with #pluginId'() {
-    given: '#pluginId is applied'
-    project.apply plugin: pluginId
+  void 'updates build tools configurations'() {
+    given: 'there is 1.0 dependee version'
+    releaseDependee '1.0'
 
-    when: 'plugin is applied'
-    project.apply plugin: 'org.fidata.prerequisites'
+    and: 'compile and testCompile configurations includes dependee'
+    buildFile << '''\
+      dependencies {
+        compile 'com.example:dependee:latest.release'
+        testCompile 'com.example:dependee:latest.release'
+      }
+    '''
 
-    then: '#outdatedTaskName task depends on pluginTaskName task'
-    Task outdatedTask = project.tasks[outdatedTaskName]
-    outdatedTask.taskDependencies.getDependencies(outdatedTask).contains(project.tasks[pluginTaskName])
+    and: 'all prerequisites are locked'
+    build 'prerequisitesUpdate', '--write-locks'
 
-    where:
-    pluginId                        | pluginTaskName      | prerequisitiesType
-    'com.github.ben-manes.versions' | 'dependencyUpdates' | 'prerequisites'
-    'com.ofg.uptodate'              | 'uptodate'          | 'prerequisites'
-    outdatedTaskName = prerequisitiesType + "Outdated"
+    and: 'there is 2.0 dependee version'
+    releaseDependee '2.0'
+
+    when: 'buildToolsUpdate --write-locks is run'
+    build 'buildToolsUpdate', '--write-locks'
+
+    then: 'testCompile configuration contains dependee 2.0 locked version'
+    new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains 'com.example:dependee:2.0'
+    and: 'compile configuration does not contain dependee 2.0 locked version'
+    !(new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains('com.example:dependee:1.0'))
+
+    (success = true) != null
+  }
+
+  void 'updates dependencies configurations'() {
+    given: 'there is 1.0 dependee version'
+    releaseDependee '1.0'
+
+    and: 'compile and testCompile configurations includes dependee'
+    buildFile << '''\
+      dependencies {
+        compile 'com.example:dependee:latest.release'
+        testCompile 'com.example:dependee:latest.release'
+      }
+    '''
+
+    and: 'all prerequisites are locked'
+    build 'prerequisitesUpdate', '--write-locks'
+
+    and: 'there is 2.0 dependee version'
+    releaseDependee '2.0'
+
+    when: 'dependenciesUpdate is run'
+    build 'dependenciesUpdate', '--write-locks'
+
+    then: 'compile configuration contains dependee 2.0 locked version'
+    new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains 'com.example:dependee:2.0'
+    and: 'testCompile configuration does not contain dependee 2.0 locked version'
+    !(new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains('com.example:dependee:1.0'))
+
+    (success = true) != null
   }
 
   // helper methods
@@ -139,4 +188,36 @@ class PrerequisitesPluginGradleUpdateSpecification extends Specification {
       .withPluginClasspath()
       .build()
   }
+
+  protected void releaseDependee(String version) {
+    new File(dependeeProjectDir, 'build.gradle').text = """\
+      plugins {
+        id 'java'
+        id 'maven-publish'
+      }
+      group = 'com.example'
+      version = '$version'
+      publishing {
+        repositories {
+          maven {
+            url ${ repoDir.toString().inspect() }
+          }
+        }
+        publications {
+          mavenJava(MavenPublication) {
+            from components.java
+          }
+        }
+      }
+    """.stripIndent()
+    new File(dependeeProjectDir, 'settings.gradle').text = '''\
+      rootProject.name = 'dependee'
+    '''.stripIndent()
+    GradleRunner.create()
+      .withGradleVersion(System.getProperty('compat.gradle.version'))
+      .withProjectDir(dependeeProjectDir)
+      .withArguments(['publish', '--stacktrace', '--refresh-dependencies'])
+      .build()
+  }
+
 }

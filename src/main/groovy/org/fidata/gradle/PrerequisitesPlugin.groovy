@@ -19,6 +19,7 @@
  */
 package org.fidata.gradle
 
+import com.sun.tools.javac.util.List
 import org.fidata.gradle.tasks.ResolveAndLockTask
 
 import groovy.transform.CompileStatic
@@ -177,13 +178,20 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         dependenciesUpdate,
         buildToolsUpdate
       ].each { Task runFirstTask ->
-        for (Task task in
-          project.tasks
-            - runFirstTask
-            - runFirstTask.taskDependencies.getDependencies(runFirstTask)
-            - runFirstTask.mustRunAfter.getDependencies(runFirstTask)
-            - runFirstTask.shouldRunAfter.getDependencies(runFirstTask)
-        ) {
+        List<Task> tasks = project.tasks.asMap.values
+        List<Task> excludedTasks = []
+        List<Task> newExcludedTasks = [runFirstTask]
+        while (newExcludedTasks.length > 0) {
+          excludedTasks += newExcludedTasks
+          excludedTasks.each { Task task ->
+            newExcludedTasks =
+              (task.taskDependencies.getDependencies(task)
+              + task.mustRunAfter.getDependencies(task)
+              + task.shouldRunAfter.getDependencies(task)).asSet()
+          }
+          excludedTasks = newExcludedTasks
+        }
+        for (Task task : tasks - excludedTasks) {
           task.mustRunAfter runFirstTask
         }
       }
@@ -223,7 +231,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
     project.dependencyLocking.lockAllConfigurations()
 
     ResolveAndLockTask resolveAndLockBuildTools = project.tasks.create(RESOLVE_AND_LOCK_BUILD_TOOLS_TASK_NAME, ResolveAndLockTask) { ResolveAndLockTask task ->
-      task.configurationMatcher = { Configuration configuration -> !isDependencyConfiguration(configuration.name) }
+      task.configurationMatcher = { Configuration configuration -> !isDependencyConfiguration(configuration?.name) }
     }
     buildToolsUpdate.dependsOn resolveAndLockBuildTools
 
@@ -233,7 +241,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
           task.extensions.extraProperties['oldWriteDependencyLocks'] = project.gradle.startParameter.writeDependencyLocks
           project.gradle.startParameter.writeDependencyLocks = true
         }
-        configurationMatcher = { Configuration configuration -> isDependencyConfiguration(configuration.name) }
+        configurationMatcher = { Configuration configuration -> isDependencyConfiguration(configuration?.name) }
         doLast {
           project.gradle.startParameter.writeDependencyLocks = (boolean)task.extensions.extraProperties['oldWriteDependencyLocks']
         }
@@ -250,6 +258,9 @@ final class PrerequisitesPlugin implements Plugin<Project> {
     }
 
     // com.ofg.uptodate plugin
-    prerequisitesOutdated.dependsOn project.tasks.findByName('uptodate')
+    Task uptodateTask = project.tasks.findByName('uptodate')
+    if (uptodateTask) {
+      prerequisitesOutdated.dependsOn uptodateTask
+    }
   }
 }
