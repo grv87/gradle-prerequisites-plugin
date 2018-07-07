@@ -34,8 +34,11 @@ gradlePlugin {
 }
 
 dependencies {
-  testImplementation group: 'pl.pragmatists', name: 'JUnitParams', version: 'latest.release'
+  implementation(group: 'com.google.guava', name: 'guava', version: '25.1-jre')
 
+  testImplementation(group: 'pl.pragmatists', name: 'JUnitParams', version: 'latest.release')
+
+  functionalTestImplementation(group: 'nebula.dependency-lock', name: 'nebula.dependency-lock.gradle.plugin', version: 'latest.release')
   functionalTestImplementation(group: 'org.ajoberstar.stutter', name: 'org.ajoberstar.stutter.gradle.plugin', version: 'latest.release')
   functionalTestImplementation(group: 'com.github.ben-manes', name: 'gradle-versions-plugin', version: 'latest.release')
   functionalTestImplementation(group: 'com.ofg', name: 'uptodate-gradle-plugin', version: 'latest.release')
@@ -43,9 +46,9 @@ dependencies {
 
 stutter {
   java(8) {
-    compatibleRange '4.8'
+    compatibleRange '4.0'
   }
   java(9) {
-    compatibleRange '4.8'
+    compatibleRange '4.0'
   }
 }

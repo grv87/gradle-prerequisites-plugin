@@ -19,248 +19,176 @@
  */
 package org.fidata.gradle
 
-import com.sun.tools.javac.util.List
+import org.fidata.gradle.utils.PrerequisiteTaskType
+import org.fidata.gradle.utils.PrerequisiteType
 import org.fidata.gradle.tasks.ResolveAndLockTask
-
 import groovy.transform.CompileStatic
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.buildinit.tasks.internal.TaskConfiguration
 import org.gradle.api.artifacts.Configuration
+import com.google.common.collect.TreeBasedTable
+import com.google.common.collect.Table
 import org.gradle.util.GradleVersion
-
-import java.util.regex.Matcher
+import com.google.common.collect.Ordering
+import com.google.common.collect.Comparators
 
 /**
  * Provides an environment for a general, language-agnostic project
  */
 @CompileStatic
 final class PrerequisitesPlugin implements Plugin<Project> {
-  /**
-   * Minimum supported version of Gradle
-   */
-  public static final String GRADLE_MINIMUM_SUPPORTED_VERSION = '4.8'
-
   private Project project
 
-  @SuppressWarnings(['BracesForForLoop', 'UnnecessaryObjectReferences'])
   void apply(Project project) {
-    assert GradleVersion.current() >= GradleVersion.version(GRADLE_MINIMUM_SUPPORTED_VERSION) : "Gradle versions before $GRADLE_MINIMUM_SUPPORTED_VERSION are not supported"
-
     this.project = project
 
     setupPrerequisitesLifecycleTasks()
-    setupGradlePrerequisitesLifecycleTasks()
-    setupOutdatedPluginsIntegration()
+    setupIntegrationForInstallUpdateTasks()
+    setupIntegrationForOutdatedTasks()
   }
 
-  /**
-   * Name of prerequisitesInstall task
-   */
-  public static final String PREREQUISITES_INSTALL_TASK_NAME = 'prerequisitesInstall'
-  /**
-   * Name of prerequisitesUpdate task
-   */
-  public static final String PREREQUISITES_UPDATE_TASK_NAME = 'prerequisitesUpdate'
-  /**
-   * Name of prerequisitesOutdated task
-   */
-  public static final String PREREQUISITES_OUTDATED_TASK_NAME = 'prerequisitesOutdated'
+  private Table<PrerequisiteTaskType, Optional<PrerequisiteType>, Task> tasks
 
   /**
-   * Name of buildToolsInstall task
+   * Gets name of common task
+   * @param taskType type of task
+   * @param type type of prerequisite
+   * @return name of task
    */
-  public static final String BUILD_TOOLS_INSTALL_TASK_NAME = 'buildToolsInstall'
-  /**
-   * Name of buildToolsUpdate task
-   */
-  public static final String BUILD_TOOLS_UPDATE_TASK_NAME = 'buildToolsUpdate'
-  /**
-   * Name of buildToolsOutdated task
-   */
-  public static final String BUILD_TOOLS_OUTDATED_TASK_NAME = 'buildToolsOutdated'
+  static final TASK_NAME(PrerequisiteTaskType taskType, PrerequisiteType type) {
+    "$taskType${ PrerequisiteType.getPluralName(type).capitalize() }"
+  }
 
-  /**
-   * Name of dependenciesInstall task
-   */
-  public static final String DEPENDENCIES_INSTALL_TASK_NAME = 'dependenciesInstall'
-  /**
-   * Name of dependenciesUpdate task
-   */
-  public static final String DEPENDENCIES_UPDATE_TASK_NAME = 'dependenciesUpdate'
-  /**
-   * Name of dependenciesOutdated task
-   */
-  public static final String DEPENDENCIES_OUTDATED_TASK_NAME = 'dependenciesOutdated'
-
-  private Task prerequisitesInstall
-  private Task prerequisitesUpdate
-  private Task prerequisitesOutdated
-  private Task buildToolsInstall
-  private Task buildToolsUpdate
-  private Task buildToolsOutdated
-  private Task dependenciesInstall
-  private Task dependenciesUpdate
-  private Task dependenciesOutdated
   private void setupPrerequisitesLifecycleTasks() {
-    prerequisitesInstall = project.tasks.create(PREREQUISITES_INSTALL_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Install all prerequisites for build'
+    tasks = TreeBasedTable.create(Ordering.natural(), Comparators.emptiesFirst(Ordering.naturalOrder()) )
+    PrerequisiteTaskType.values().each { PrerequisiteTaskType taskType ->
+      (PrerequisiteType.values() + [null]).each { PrerequisiteType type ->
+        String taskName = TASK_NAME(taskType, type)
+        Task task = project.tasks.create(taskName) { Task task ->
+          task.with {
+            group = TaskConfiguration.GROUP
+            description = taskType.description.call(PrerequisiteType.getPluralName(type))
+          }
+        }
+        tasks.put(taskType, Optional.ofNullable(type), task)
+        project.logger.debug('org.fidata.prerequisites: {} task created', task)
+      }
+      tasks.get(taskType, Optional.empty()).dependsOn tasks.row(taskType).findAll { Optional<PrerequisiteType> type, Task _ -> type.present }.values()
+      PrerequisiteType.values().each { PrerequisiteType type1 ->
+        tasks.get(taskType, Optional.of(type1)).shouldRunAfter(tasks.row(taskType).findAll { Optional<PrerequisiteType> type2, Task _ ->
+          type2.present && type2.get() > type1
+        }.values())
       }
     }
-    prerequisitesUpdate = project.tasks.create(PREREQUISITES_UPDATE_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Update all prerequisites that support automatic update'
-      }
-    }
-    prerequisitesOutdated = project.tasks.create(PREREQUISITES_OUTDATED_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Show outdated prerequisites'
-      }
-    }
-
-    buildToolsInstall = project.tasks.create(BUILD_TOOLS_INSTALL_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Install all build tools for build'
-      }
-    }
-    buildToolsUpdate = project.tasks.create(BUILD_TOOLS_UPDATE_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Update all build tools that support automatic update'
-      }
-    }
-    buildToolsOutdated = project.tasks.create(BUILD_TOOLS_OUTDATED_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Show outdated build tools'
-      }
-    }
-
-    dependenciesInstall = project.tasks.create(DEPENDENCIES_INSTALL_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Install all dependencies for build'
-      }
-    }
-    dependenciesUpdate = project.tasks.create(DEPENDENCIES_UPDATE_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Update all dependencies that support automatic update'
-      }
-    }
-    dependenciesOutdated = project.tasks.create(DEPENDENCIES_OUTDATED_TASK_NAME) { Task task ->
-      task.with {
-        group = TaskConfiguration.GROUP
-        description = 'Show outdated dependencies'
-      }
-    }
-
-    prerequisitesInstall.dependsOn buildToolsInstall, dependenciesInstall
-    prerequisitesUpdate.dependsOn buildToolsUpdate, dependenciesUpdate
-    prerequisitesOutdated.dependsOn buildToolsOutdated, dependenciesOutdated
-    dependenciesInstall.shouldRunAfter prerequisitesInstall
-    dependenciesUpdate.shouldRunAfter buildToolsUpdate
-    dependenciesOutdated.shouldRunAfter buildToolsOutdated
 
     project.afterEvaluate {
-      [
-        prerequisitesInstall,
-        buildToolsInstall,
-        dependenciesInstall,
-        prerequisitesUpdate,
-        dependenciesUpdate,
-        buildToolsUpdate
-      ].each { Task runFirstTask ->
-        List<Task> tasks = project.tasks.asMap.values
-        List<Task> excludedTasks = []
-        List<Task> newExcludedTasks = [runFirstTask]
-        while (newExcludedTasks.length > 0) {
+      ((Collection<Task>)[
+        tasks.row(PrerequisiteTaskType.INSTALL),
+        tasks.row(PrerequisiteTaskType.OUTDATED)
+      ]*.values().flatten()).each { Task runFirstTask ->
+        // Recursively get all task direct and indirect dependencies
+        Set<Task> excludedTasks = []
+        Set<Task> newExcludedTasks = [runFirstTask].toSet()
+        while (true) {
           excludedTasks += newExcludedTasks
-          excludedTasks.each { Task task ->
-            newExcludedTasks =
-              (task.taskDependencies.getDependencies(task)
-              + task.mustRunAfter.getDependencies(task)
-              + task.shouldRunAfter.getDependencies(task)).asSet()
+
+          Set<Task> veryNewExcludedTasks = []
+          newExcludedTasks.each { Task task ->
+            veryNewExcludedTasks.addAll((Collection<Task>)task.taskDependencies.getDependencies(task))
+            veryNewExcludedTasks.addAll((Collection<Task>)task.mustRunAfter.getDependencies(task))
+            veryNewExcludedTasks.addAll((Collection<Task>)task.shouldRunAfter.getDependencies(task))
           }
-          excludedTasks = newExcludedTasks
+          veryNewExcludedTasks -= excludedTasks
+
+          if (veryNewExcludedTasks.size() == 0) {
+            break
+          }
+
+          newExcludedTasks = veryNewExcludedTasks
         }
-        for (Task task : tasks - excludedTasks) {
+
+        (project.tasks - excludedTasks).each { Task task ->
           task.mustRunAfter runFirstTask
         }
       }
-
-    }
-  }
-
-  static boolean isDependencyConfiguration(String name) {
-    [
-      JavaPlugin.COMPILE_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_CONFIGURATION_NAME,
-      JavaPlugin.API_CONFIGURATION_NAME,
-      JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME,
-      JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME,
-      JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME,
-      JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME
-    ].any { String configurationName ->
-      Matcher matcher = (name =~ /(?i)^(.*)$configurationName$/)
-      matcher.matches() && !(matcher.group(1) ==~ /(?i).*test/)
     }
   }
 
   /**
-   * Name of resolveAndLockBuilsTools task
+   * Gets name of Gradle task
+   * @param taskType type of task
+   * @param type type of prerequisite
+   * @return name of task
    */
-  public static final String RESOLVE_AND_LOCK_BUILD_TOOLS_TASK_NAME = 'resolveAndLockBuildTools'
+  static final String GRADLE_TASK_NAME(PrerequisiteTaskType taskType, PrerequisiteType type) {
+    "${ taskType }Gradle${ PrerequisiteType.getPluralName(type).capitalize() }"
+  }
+  private void setupIntegrationForInstallUpdateTasks() {
+    if (GradleVersion.current() >= GradleVersion.version('4.8')) {
+      project.dependencyLocking.lockAllConfigurations()
 
-  /**
-   * Name of resolveAndLockDependencies task
-   */
-  public static final String RESOLVE_AND_LOCK_DEPENDENCIES_TASK_NAME = 'resolveAndLockDependencies'
+      PrerequisiteType.values().each { PrerequisiteType type ->
+        ResolveAndLockTask installTask = project.tasks.create(GRADLE_TASK_NAME(PrerequisiteTaskType.INSTALL, type), ResolveAndLockTask)
+        installTask.configurationMatcher = { Configuration configuration ->
+          if (configuration == null) { project.logger.error('configuration is null 2!!!') }
+          /*configuration != null &&*/ PrerequisiteType.fromConfigurationName(configuration.name) == type && project.file("gradle/dependency-locks/${ configuration.name }.lockfile").exists() }
+        tasks.get(PrerequisiteTaskType.INSTALL, Optional.of(type)).dependsOn installTask
 
-  private void setupGradlePrerequisitesLifecycleTasks() {
-    project.dependencyLocking.lockAllConfigurations()
-
-    ResolveAndLockTask resolveAndLockBuildTools = project.tasks.create(RESOLVE_AND_LOCK_BUILD_TOOLS_TASK_NAME, ResolveAndLockTask) { ResolveAndLockTask task ->
-      task.configurationMatcher = { Configuration configuration -> !isDependencyConfiguration(configuration?.name) }
+        ResolveAndLockTask updateTask = project.tasks.create(GRADLE_TASK_NAME(PrerequisiteTaskType.UPDATE, type), ResolveAndLockTask)
+        updateTask.configurationMatcher = { Configuration configuration ->
+          if (configuration == null) { project.logger.error('configuration is null 3!!!') }
+          /*configuration != null &&*/ PrerequisiteType.fromConfigurationName(configuration.name) == type }
+        tasks.get(PrerequisiteTaskType.UPDATE, Optional.of(type)).dependsOn updateTask
+      }
     }
-    buildToolsUpdate.dependsOn resolveAndLockBuildTools
 
-    ResolveAndLockTask resolveAndLockDependencies = project.tasks.create(RESOLVE_AND_LOCK_DEPENDENCIES_TASK_NAME, ResolveAndLockTask) { ResolveAndLockTask task ->
-      task.with {
-        doFirst {
-          task.extensions.extraProperties['oldWriteDependencyLocks'] = project.gradle.startParameter.writeDependencyLocks
-          project.gradle.startParameter.writeDependencyLocks = true
-        }
-        configurationMatcher = { Configuration configuration -> isDependencyConfiguration(configuration?.name) }
-        doLast {
-          project.gradle.startParameter.writeDependencyLocks = (boolean)task.extensions.extraProperties['oldWriteDependencyLocks']
+    project.plugins.withId('nebula.dependency-lock') {
+      Class<? extends Task> generateLockTaskClass = (Class<? extends Task>)Class.forName('nebula.plugin.dependencylock.tasks.GenerateLockTask', false, this.class.classLoader)
+      Class<? extends Task> updateLockTaskClass = (Class<? extends Task>)Class.forName('nebula.plugin.dependencylock.tasks.UpdateLockTask', false, this.class.classLoader)
+      Class<? extends Task> saveLockTaskClass = (Class<? extends Task>)Class.forName('nebula.plugin.dependencylock.tasks.SaveLockTask', false, this.class.classLoader)
+
+      project.tasks.withType(generateLockTaskClass) { Task task ->
+        task.group = null
+        tasks.get(PrerequisiteTaskType.INSTALL, Optional.empty()).mustRunAfter task
+      }
+      project.tasks.withType(updateLockTaskClass) { Task task ->
+        task.group = null
+        tasks.get(PrerequisiteTaskType.UPDATE, Optional.empty()).mustRunAfter task
+      }
+      project.tasks.withType(saveLockTaskClass) { Task task ->
+        task.group = null
+        tasks.get(PrerequisiteTaskType.UPDATE, Optional.empty()).mustRunAfter task
+      }
+      project.tasks.findByName('saveGlobalLock')?.with {
+        dependsOn project.tasks.getByName('updateGlobalLock')
+      }
+      project.tasks.getByName('saveLock').with {
+        dependsOn project.tasks.getByName('updateLock')
+      }
+      tasks.get(PrerequisiteTaskType.UPDATE, Optional.empty()).with {
+        if (((File)project.tasks.withType(saveLockTaskClass).findByName('saveGlobalLock')?.property('outputLock'))?.exists()) {
+          dependsOn project.tasks.withType(saveLockTaskClass).getByName('saveGlobalLock')
+        } else {
+          dependsOn project.tasks.withType(saveLockTaskClass).getByName('saveLock')
         }
       }
     }
-    dependenciesUpdate.dependsOn resolveAndLockDependencies
+    project.plugins.withId('org.ajoberstar.stutter') {
+      project.plugins.withId('java') {
+        tasks.get(PrerequisiteTaskType.OUTDATED, Optional.empty()).dependsOn project.tasks.getByName('stutterWriteLocks')
+      }
+    }
   }
 
-  private void setupOutdatedPluginsIntegration() {
-    // com.github.ben-manes.versions plugin
-    try {
-      prerequisitesOutdated.dependsOn project.tasks.withType((Class<? extends Task>)Class.forName('com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask', false, this.class.classLoader))
-    } catch (ClassNotFoundException ignored) {
+  private void setupIntegrationForOutdatedTasks() {
+    project.plugins.withId('com.github.ben-manes.versions') {
+      tasks.get(PrerequisiteTaskType.OUTDATED, Optional.empty()).dependsOn project.tasks.withType((Class<? extends Task>)Class.forName('com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask', false, this.class.classLoader))
     }
 
-    // com.ofg.uptodate plugin
-    Task uptodateTask = project.tasks.findByName('uptodate')
-    if (uptodateTask) {
-      prerequisitesOutdated.dependsOn uptodateTask
+    project.plugins.withId('com.ofg.uptodate') {
+      tasks.get(PrerequisiteTaskType.OUTDATED, Optional.empty()).dependsOn project.tasks.getByName('uptodate')
     }
   }
 }

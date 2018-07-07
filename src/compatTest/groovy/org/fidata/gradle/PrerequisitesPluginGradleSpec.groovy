@@ -1,6 +1,7 @@
 #!/usr/bin/env groovy
 /*
  * Specification for org.fidata.prerequisites Gradle plugin
+ * for integration with Gradle dependency locking feature
  * Copyright © 2018  Basil Peace
  *
  * This file is part of gradle-prerequisites-plugin.
@@ -22,22 +23,22 @@ package org.fidata.gradle
 import spock.lang.Specification
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.BuildResult
-import spock.lang.Unroll
 import java.nio.file.Files
+import org.gradle.util.GradleVersion
+import spock.lang.IgnoreIf
 
 /**
- * Specification for {@link org.fidata.gradle.PrerequisitesPlugin} class
- * for updating Gradle dependencies
+ * Specification for {@link PrerequisitesPlugin} class
+ * for integration with Gradle dependency locking feature
  */
-class PrerequisitesPluginGradleUpdateSpecification extends Specification {
+@IgnoreIf({ GradleVersion.version(System.getProperty('compat.gradle.version')) < GradleVersion.version('4.8') })
+class PrerequisitesPluginGradleSpec extends Specification {
   // fields
   boolean success = false
 
   final File repoDir = Files.createTempDirectory('compatTest').toFile()
   final File dependeeProjectDir = Files.createTempDirectory('compatTest').toFile()
   final File testProjectDir = Files.createTempDirectory('compatTest').toFile()
-
-  File buildFile
 
   // fixture methods
 
@@ -46,8 +47,9 @@ class PrerequisitesPluginGradleUpdateSpecification extends Specification {
 
   // run before every feature method
   void setup() {
-    buildFile = new File(testProjectDir, 'build.gradle')
-    buildFile << """\
+    releaseDependee '1.0'
+
+    new File(testProjectDir, 'build.gradle') << """\
       plugins {
         id 'java'
         id 'org.fidata.prerequisites'
@@ -57,6 +59,11 @@ class PrerequisitesPluginGradleUpdateSpecification extends Specification {
         maven {
           url ${ repoDir.toString().inspect() }
         }
+      }
+
+      dependencies {
+        compile 'com.example:dependee:latest.release'
+        testCompile 'com.example:dependee:latest.release'
       }
     """.stripIndent()
   }
@@ -82,99 +89,64 @@ class PrerequisitesPluginGradleUpdateSpecification extends Specification {
   // feature methods
 
   void 'locks build tools configurations'() {
-    given: 'there is 1.0 dependee version'
-    releaseDependee '1.0'
-
-    and: 'testCompile configuration includes dependee'
-    buildFile << '''\
-      dependencies {
-        testCompile 'com.example:dependee:latest.release'
-      }
-    '''
-
     when: 'buildToolsUpdate --write-locks is run'
-    build 'buildToolsUpdate', '--write-locks'
+    build 'updateBuildTools', '--write-locks'
 
     then: 'testCompile configuration contains dependee 1.0 locked version'
     new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains 'com.example:dependee:1.0'
+
+    and: 'compile configuration is not locked'
+    !(new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').exists())
 
     (success = true) != null
   }
 
   void 'locks dependencies configurations'() {
-    given: 'there is 1.0 dependee version'
-    releaseDependee '1.0'
-
-    and: 'compile configuration includes dependee'
-    buildFile << '''\
-      dependencies {
-        compile 'com.example:dependee:latest.release'
-      }
-    '''
-
     when: 'dependenciesUpdate is run'
-    build 'dependenciesUpdate'
+    build 'updateDependencies', '--write-locks'
 
     then: 'compile configuration contains dependee 1.0 locked version'
     new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains 'com.example:dependee:1.0'
+
+    and: 'testCompile configuration is not locked'
+    !(new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').exists())
 
     (success = true) != null
   }
 
   void 'updates build tools configurations'() {
-    given: 'there is 1.0 dependee version'
-    releaseDependee '1.0'
-
-    and: 'compile and testCompile configurations includes dependee'
-    buildFile << '''\
-      dependencies {
-        compile 'com.example:dependee:latest.release'
-        testCompile 'com.example:dependee:latest.release'
-      }
-    '''
-
-    and: 'all prerequisites are locked'
-    build 'prerequisitesUpdate', '--write-locks'
+    given: 'all prerequisites are locked'
+    build 'updatePrerequisites', '--write-locks'
 
     and: 'there is 2.0 dependee version'
     releaseDependee '2.0'
 
     when: 'buildToolsUpdate --write-locks is run'
-    build 'buildToolsUpdate', '--write-locks'
+    build 'updateBuildTools', '--write-locks'
+
 
     then: 'testCompile configuration contains dependee 2.0 locked version'
     new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains 'com.example:dependee:2.0'
     and: 'compile configuration does not contain dependee 2.0 locked version'
-    !(new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains('com.example:dependee:1.0'))
+    !(new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains('com.example:dependee:2.0'))
 
     (success = true) != null
   }
 
   void 'updates dependencies configurations'() {
-    given: 'there is 1.0 dependee version'
-    releaseDependee '1.0'
-
-    and: 'compile and testCompile configurations includes dependee'
-    buildFile << '''\
-      dependencies {
-        compile 'com.example:dependee:latest.release'
-        testCompile 'com.example:dependee:latest.release'
-      }
-    '''
-
-    and: 'all prerequisites are locked'
-    build 'prerequisitesUpdate', '--write-locks'
+    given: 'all prerequisites are locked'
+    build 'updatePrerequisites', '--write-locks'
 
     and: 'there is 2.0 dependee version'
     releaseDependee '2.0'
 
     when: 'dependenciesUpdate is run'
-    build 'dependenciesUpdate', '--write-locks'
+    build 'updateDependencies', '--write-locks'
 
     then: 'compile configuration contains dependee 2.0 locked version'
     new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains 'com.example:dependee:2.0'
     and: 'testCompile configuration does not contain dependee 2.0 locked version'
-    !(new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains('com.example:dependee:1.0'))
+    !(new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains('com.example:dependee:2.0'))
 
     (success = true) != null
   }
@@ -184,7 +156,9 @@ class PrerequisitesPluginGradleUpdateSpecification extends Specification {
     GradleRunner.create()
       .withGradleVersion(System.getProperty('compat.gradle.version'))
       .withProjectDir(testProjectDir)
-      .withArguments([*arguments, '--stacktrace', '--refresh-dependencies'])
+      .withArguments([*arguments, '--no-daemon', '--full-stacktrace', '--refresh-dependencies'])
+      .withDebug(true)
+      .forwardOutput()
       .withPluginClasspath()
       .build()
   }
@@ -216,7 +190,8 @@ class PrerequisitesPluginGradleUpdateSpecification extends Specification {
     GradleRunner.create()
       .withGradleVersion(System.getProperty('compat.gradle.version'))
       .withProjectDir(dependeeProjectDir)
-      .withArguments(['publish', '--stacktrace', '--refresh-dependencies'])
+      .withArguments(['publish', '--full-stacktrace', '--refresh-dependencies'])
+      .forwardOutput()
       .build()
   }
 

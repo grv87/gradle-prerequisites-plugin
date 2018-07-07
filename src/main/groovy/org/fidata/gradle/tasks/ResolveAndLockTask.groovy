@@ -9,15 +9,20 @@ import org.gradle.api.tasks.TaskAction
 @CompileStatic
 class ResolveAndLockTask extends DefaultTask {
   @Input
-  Closure<Boolean> configurationMatcher = { true }
+  Closure<Boolean> configurationMatcher = { Configuration configuration -> true }
 
   @TaskAction
   void resolveAndLock() {
     assert project.gradle.startParameter.writeDependencyLocks
 
     project.configurations.each{ Configuration configuration ->
-      if (configuration.canBeResolved && configurationMatcher.call(configuration)) {
-        configuration.resolve()
+      if (configuration == null) {
+        project.logger.error('configuration is null!!!')
+      }
+      if (configuration != null && configuration.canBeResolved) {
+        if (configurationMatcher.call(configuration)) {
+          configuration.resolve()
+        }
       }
     }
   }

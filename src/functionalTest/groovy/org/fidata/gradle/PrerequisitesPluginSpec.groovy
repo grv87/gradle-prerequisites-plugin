@@ -30,7 +30,7 @@ import spock.lang.Unroll
 /**
  * Specification for {@link org.fidata.gradle.PrerequisitesPlugin} class
  */
-class PrerequisitesPluginSpecification extends Specification {
+class PrerequisitesPluginSpec extends Specification {
   // fields
   @Rule
   final TemporaryFolder testProjectDir = new TemporaryFolder()
@@ -65,39 +65,42 @@ class PrerequisitesPluginSpecification extends Specification {
 
     where:
     task << [
-      'prerequisitesInstall', 'prerequisitesUpdate', 'prerequisitesOutdated',
-      'dependenciesInstall', 'dependenciesUpdate',
-      'buildToolsInstall', 'buildToolsUpdate',
+      'installPrerequisites', 'updatePrerequisites', 'outdatedPrerequisites',
+      'installBuildTools',    'updateBuildTools',    'outdatedBuildTools',
+      'installDependencies',  'updateDependencies',  'outdatedDependencies',
     ]
   }
 
   @Unroll
-  void 'integrates update task with #pluginId'() {
-    given: '#pluginId is applied'
+  void 'integrates update task with #pluginId plugin'() {
+    given: 'java plugin is applied'
+    project.apply plugin: 'java'
+    and: '#pluginId plugin is applied'
     project.apply plugin: pluginId
 
     when: 'plugin is applied'
     project.apply plugin: 'org.fidata.prerequisites'
 
-    then: '#updateTaskName task depends on pluginTaskName task'
+    then: '#updateTaskName task depends on #pluginTaskName task'
     Task updateTask = project.tasks[updateTaskName]
     updateTask.taskDependencies.getDependencies(updateTask).contains(project.tasks[pluginTaskName])
 
     where:
-    pluginId                 | pluginTaskName      | prerequisitiesType
-    'org.ajoberstar.stutter' | 'stutterWriteLocks' | 'buildTools'
-    updateTaskName = prerequisitiesType + "Update"
+    pluginId = 'org.ajoberstar.stutter'
+    pluginTaskName = 'stutterWriteLocks'
+    prerequisitiesType = 'buildTools'
+    updateTaskName = 'update' + prerequisitiesType.capitalize()
   }
 
   @Unroll
-  void 'integrates outdated task with #pluginId'() {
-    given: '#pluginId is applied'
+  void 'integrates outdated task with #pluginId plugin'() {
+    given: '#pluginId plugin is applied'
     project.apply plugin: pluginId
 
     when: 'plugin is applied'
     project.apply plugin: 'org.fidata.prerequisites'
 
-    then: '#outdatedTaskName task depends on pluginTaskName task'
+    then: '#outdatedTaskName task depends on #pluginTaskName task'
     Task outdatedTask = project.tasks[outdatedTaskName]
     outdatedTask.taskDependencies.getDependencies(outdatedTask).contains(project.tasks[pluginTaskName])
 
@@ -105,7 +108,18 @@ class PrerequisitesPluginSpecification extends Specification {
     pluginId                        | pluginTaskName      | prerequisitiesType
     'com.github.ben-manes.versions' | 'dependencyUpdates' | 'prerequisites'
     'com.ofg.uptodate'              | 'uptodate'          | 'prerequisites'
-    outdatedTaskName = prerequisitiesType + "Outdated"
+    outdatedTaskName = 'outdated' + prerequisitiesType.capitalize()
+  }
+
+  void 'test3'() {
+    given: 'plugin is applied'
+    project.apply plugin: 'org.fidata.prerequisites'
+
+    when: 'task is run'
+    project.tasks['updateBuildTools'].execute()
+
+    then: 'no exception thrown'
+    noExceptionThrown()
   }
 
   // helper methods
