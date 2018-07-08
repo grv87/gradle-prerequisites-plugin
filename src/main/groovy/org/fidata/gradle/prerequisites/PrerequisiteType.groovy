@@ -25,6 +25,9 @@ import groovy.transform.CompileStatic
 import org.gradle.api.plugins.JavaPlugin
 import java.util.regex.Matcher
 
+/**
+ * Enum of different prerequisite types
+ */
 @CompileStatic
 enum PrerequisiteType {
   DEPENDENCY('dependencies'),
