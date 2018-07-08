@@ -26,6 +26,7 @@ import groovy.transform.CompileStatic
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.buildinit.tasks.internal.TaskConfiguration
 import org.gradle.api.artifacts.Configuration
 import com.google.common.collect.TreeBasedTable
@@ -190,15 +191,26 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         Task stutterWriteLocksTask = project.tasks.getByName('stutterWriteLocks')
         tasks.get(PrerequisiteTaskType.UPDATE, Optional.of(PrerequisiteType.BUILD_TOOL)).dependsOn stutterWriteLocksTask
         stutterWriteLocksTask.group = null
+
+        Task stutterWriteLocksIfNotExistTask = project.tasks.create('stutterWriteLocksIfNotExist') { Task task ->
+          task.with {
+            description = 'Generate lock files of Gradle versions to test for compatibility if they not already exist.'
+            actions.addAll stutterWriteLocksTask.actions
+            onlyIf {
+              project.fileTree(dir: ((DirectoryProperty) project.extensions.getByName('stutter').properties['lockDir']).get(), includes: ['*.*']).empty
+            }
+          }
+        }
+        tasks.get(PrerequisiteTaskType.INSTALL, Optional.of(PrerequisiteType.BUILD_TOOL)).dependsOn stutterWriteLocksIfNotExistTask
       }
     }
   }
 
   private void setupIntegrationForOutdatedTasks() {
     project.plugins.withId('com.github.ben-manes.versions') {
-      tasks.get(PrerequisiteTaskType.OUTDATED, Optional.empty()).dependsOn project.tasks.withType((Class<? extends Task>)this.class.classLoader.loadClass('com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask'))
       project.tasks.withType((Class<? extends Task>)this.class.classLoader.loadClass('com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask')) { Task task ->
         task.group = null
+        tasks.get(PrerequisiteTaskType.OUTDATED, Optional.empty()).dependsOn task
       }
     }
 
