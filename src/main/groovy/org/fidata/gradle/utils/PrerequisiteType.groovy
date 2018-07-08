@@ -38,7 +38,7 @@ public enum PrerequisiteType {
 
   /**
    * Plural name of the prerequisite type that can be used for task names
-   * @param type prerequisite type, null for prerequisites
+   * @param type prerequisite type, null for prerequisites in total
    * @return plural name
    */
   static final String getPluralName(PrerequisiteType type) {
@@ -46,30 +46,40 @@ public enum PrerequisiteType {
   }
 
   /**
-   * Gets prerequisite type from Gradle configuration name
+   * Determines prerequisite type from Gradle configuration name
    * @param configurationName configuration name
    * @return prerequisite type
    *         null on null configuration name
    */
-
-  static PrerequisiteType fromConfigurationName(String configurationName) {
+  static final PrerequisiteType fromConfigurationName(String configurationName) {
     if (!configurationName) {
       return null
     }
-    [
-      JavaPlugin.COMPILE_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_CONFIGURATION_NAME,
-      JavaPlugin.API_CONFIGURATION_NAME,
-      JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME,
-      JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME,
-      JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME,
-      JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME,
-      JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME
-    ].any { String dependencyConfigurationName ->
-      Matcher matcher = (configurationName =~ /(?i)^(.*)$dependencyConfigurationName$/)
-      matcher.matches() && !(matcher.group(1) ==~ /(?i).*test/)
-    } ? DEPENDENCY : BUILD_TOOL
+    (
+      // `org.gradle.java` plugin
+      [
+        JavaPlugin.COMPILE_CONFIGURATION_NAME,
+        JavaPlugin.RUNTIME_CONFIGURATION_NAME,
+        JavaPlugin.API_CONFIGURATION_NAME,
+        JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME,
+        JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME,
+        JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
+        JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME,
+        JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME,
+        JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME,
+        JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME,
+      ].any { String dependencyConfigurationName ->
+        Matcher matcher = (configurationName =~ /(?i)^(.*)$dependencyConfigurationName$/)
+        matcher.matches() && !(matcher.group(1) ==~ /(?i).*test/)
+      } ||
+      [
+        // `com.github.jruby-gradle.base` plugin
+        'gems',
+        // `com.github.jruby-gradle.jar` plugin
+        'jrubyJar',
+        // `com.github.jruby-gradle.war` plugin
+        'jrubyWar',
+      ].contains(configurationName)
+    ) ? DEPENDENCY : BUILD_TOOL
   }
 }

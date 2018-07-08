@@ -132,14 +132,21 @@ final class PrerequisitesPlugin implements Plugin<Project> {
       PrerequisiteType.values().each { PrerequisiteType type ->
         ResolveAndLockTask installTask = project.tasks.create(GRADLE_TASK_NAME(PrerequisiteTaskType.INSTALL, type), ResolveAndLockTask)
         installTask.configurationMatcher = { Configuration configuration ->
-          if (configuration == null) { project.logger.error('configuration is null 2!!!') }
-          /*configuration != null &&*/ PrerequisiteType.fromConfigurationName(configuration.name) == type && project.file("gradle/dependency-locks/${ configuration.name }.lockfile").exists() }
+          PrerequisiteType.fromConfigurationName(configuration.name) == type &&
+            /*
+             * WORKAROUND:
+             * org.gradle.internal.locking.LockFileReaderWriter.DEPENDENCY_LOCKING_FOLDER and FILE_SUFFIX
+             * have package scope
+             * <grv87 2018-07-08>
+             */
+            project.file("gradle/dependency-locks/${ configuration.name }.lockfile").exists()
+        }
         tasks.get(PrerequisiteTaskType.INSTALL, Optional.of(type)).dependsOn installTask
 
         ResolveAndLockTask updateTask = project.tasks.create(GRADLE_TASK_NAME(PrerequisiteTaskType.UPDATE, type), ResolveAndLockTask)
         updateTask.configurationMatcher = { Configuration configuration ->
-          if (configuration == null) { project.logger.error('configuration is null 3!!!') }
-          /*configuration != null &&*/ PrerequisiteType.fromConfigurationName(configuration.name) == type }
+          PrerequisiteType.fromConfigurationName(configuration.name) == type
+        }
         tasks.get(PrerequisiteTaskType.UPDATE, Optional.of(type)).dependsOn updateTask
       }
     }
@@ -160,12 +167,14 @@ final class PrerequisitesPlugin implements Plugin<Project> {
       project.tasks.withType(saveLockTaskClass) { Task task ->
         task.group = null
         tasks.get(PrerequisiteTaskType.UPDATE, Optional.empty()).mustRunAfter task
-      }
-      project.tasks.findByName('saveGlobalLock')?.with {
-        dependsOn project.tasks.getByName('updateGlobalLock')
-      }
-      project.tasks.getByName('saveLock').with {
-        dependsOn project.tasks.getByName('updateLock')
+        switch (task.name) {
+          case 'saveGlobalLock':
+            task.dependsOn project.tasks.withType(updateLockTaskClass).getByName('updateGlobalLock')
+            break
+          case 'saveLock':
+            task.dependsOn project.tasks.withType(updateLockTaskClass).getByName('updateLock')
+            break
+        }
       }
       tasks.get(PrerequisiteTaskType.UPDATE, Optional.empty()).with {
         if (((File)project.tasks.withType(saveLockTaskClass).findByName('saveGlobalLock')?.property('outputLock'))?.exists()) {
@@ -175,6 +184,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         }
       }
     }
+
     project.plugins.withId('org.ajoberstar.stutter') {
       project.plugins.withId('java') {
         tasks.get(PrerequisiteTaskType.OUTDATED, Optional.empty()).dependsOn project.tasks.getByName('stutterWriteLocks')

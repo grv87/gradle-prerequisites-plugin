@@ -156,7 +156,7 @@ class PrerequisitesPluginGradleSpec extends Specification {
     GradleRunner.create()
       .withGradleVersion(System.getProperty('compat.gradle.version'))
       .withProjectDir(testProjectDir)
-      .withArguments([*arguments, '--no-daemon', '--full-stacktrace', '--refresh-dependencies'])
+      .withArguments(arguments + (System.hasProperty('org.gradle.logging.level') ? [] : ['--info']) + ['--full-stacktrace', '--refresh-dependencies']) // '--no-daemon'
       .withDebug(true)
       .forwardOutput()
       .withPluginClasspath()

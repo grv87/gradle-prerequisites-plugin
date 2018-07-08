@@ -66,10 +66,17 @@ Gradle
 
 Plugin automatically integrates with the following plugins
 if they are applied:
+*   [`nebula.dependency-lock`](
+    https://github.com/nebula-plugins/gradle-dependency-lock-plugin)
+*   [`com.github.jruby-gradle`](http://jruby-gradle.org/) set of plugins
+*   [`org.ajoberstar.stutter`](
+    https://github.com/ajoberstar/gradle-stutter)
+*   [`com.github.ben-manes.versions`](
+    https://github.com/ben-manes/gradle-versions-plugin)
+*   [`com.ofg.uptodate`](
+    https://github.com/4finance/uptodate-gradle-plugin)
 
-*
-
-
+Offerings and pull requests to support other plugins are appreciated.
 
 
 ------------------------------------------------------------------------
