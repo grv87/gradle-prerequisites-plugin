@@ -44,8 +44,8 @@ enum PrerequisiteType {
    * @param type prerequisite type, null for prerequisites in total
    * @return plural name
    */
-  static final String getPluralName(PrerequisiteType type) {
-    type == null ? 'prerequisites' : type.pluralName
+  static final String getPluralName(Optional<PrerequisiteType> type) {
+    type.present ? 'prerequisites' : type.get().pluralName
   }
 
   /**

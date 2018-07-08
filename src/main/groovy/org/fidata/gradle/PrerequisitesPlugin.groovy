@@ -62,13 +62,13 @@ final class PrerequisitesPlugin implements Plugin<Project> {
    * @return name of task
    */
   @SuppressWarnings(['MethodName'])
-  static final String TASK_NAME(PrerequisiteTaskType taskType, PrerequisiteType type) {
+  static final String TASK_NAME(PrerequisiteTaskType taskType, Optional<PrerequisiteType> type) {
     "$taskType${ PrerequisiteType.getPluralName(type).capitalize() }"
   }
 
   private void setupPrerequisitesLifecycleTasks() {
     PrerequisiteTaskType.values().each { PrerequisiteTaskType taskType ->
-      (PrerequisiteType.values() + [null]).each { PrerequisiteType type ->
+      (PrerequisiteType.values() + [null]).collect { PrerequisiteType type -> Optional.ofNullable(type) }.each { Optional<PrerequisiteType> type ->
         String taskName = TASK_NAME(taskType, type)
         Task task = project.tasks.create(taskName) { Task task ->
           task.with {
@@ -76,7 +76,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
             description = taskType.description.call(PrerequisiteType.getPluralName(type))
           }
         }
-        tasks.put(taskType, Optional.ofNullable(type), task)
+        tasks.put(taskType, type, task)
         project.logger.debug('org.fidata.prerequisites: {} task created', task)
       }
       tasks.get(taskType, Optional.empty()).dependsOn tasks.row(taskType).findAll { Optional<PrerequisiteType> type, Task task -> type.present }.values()
