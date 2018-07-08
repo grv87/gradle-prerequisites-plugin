@@ -54,7 +54,7 @@ class PrerequisitesPluginGradleSpec extends Specification {
         id 'java'
         id 'org.fidata.prerequisites'
       }
-      
+
       repositories {
         maven {
           url ${ repoDir.toString().inspect() }
@@ -124,7 +124,6 @@ class PrerequisitesPluginGradleSpec extends Specification {
     when: 'buildToolsUpdate --write-locks is run'
     build 'updateBuildTools', '--write-locks'
 
-
     then: 'testCompile configuration contains dependee 2.0 locked version'
     new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains 'com.example:dependee:2.0'
     and: 'compile configuration does not contain dependee 2.0 locked version'
@@ -156,7 +155,7 @@ class PrerequisitesPluginGradleSpec extends Specification {
     GradleRunner.create()
       .withGradleVersion(System.getProperty('compat.gradle.version'))
       .withProjectDir(testProjectDir)
-      .withArguments(arguments + (System.hasProperty('org.gradle.logging.level') ? [] : ['--info']) + ['--full-stacktrace', '--refresh-dependencies']) // '--no-daemon'
+      .withArguments(arguments.toList() + (System.hasProperty('org.gradle.logging.level') ? [] : ['--info']) + ['--full-stacktrace', '--refresh-dependencies']) // '--no-daemon'
       .withDebug(true)
       .forwardOutput()
       .withPluginClasspath()

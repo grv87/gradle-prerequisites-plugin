@@ -17,7 +17,7 @@
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package org.fidata.gradle.utils
+package org.fidata.gradle.prerequisites
 
 import org.junit.runner.RunWith
 import org.junit.Test

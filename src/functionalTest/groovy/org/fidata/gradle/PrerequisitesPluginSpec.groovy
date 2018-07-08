@@ -83,7 +83,11 @@ class PrerequisitesPluginSpec extends Specification {
 
     then: '#updateTaskName task depends on #pluginTaskName task'
     Task updateTask = project.tasks[updateTaskName]
-    updateTask.taskDependencies.getDependencies(updateTask).contains(project.tasks[pluginTaskName])
+    Task pluginTask = project.tasks[pluginTaskName]
+    updateTask.taskDependencies.getDependencies(updateTask).contains(pluginTask)
+
+    and: '#pluginTaskName task has no group'
+    pluginTask.group == null
 
     where:
     pluginId = 'org.ajoberstar.stutter'
@@ -102,24 +106,17 @@ class PrerequisitesPluginSpec extends Specification {
 
     then: '#outdatedTaskName task depends on #pluginTaskName task'
     Task outdatedTask = project.tasks[outdatedTaskName]
-    outdatedTask.taskDependencies.getDependencies(outdatedTask).contains(project.tasks[pluginTaskName])
+    Task pluginTask = project.tasks[pluginTaskName]
+    outdatedTask.taskDependencies.getDependencies(outdatedTask).contains(pluginTask)
+
+    and: '#pluginTaskName task has no group'
+    pluginTask.group == null
 
     where:
     pluginId                        | pluginTaskName      | prerequisitiesType
     'com.github.ben-manes.versions' | 'dependencyUpdates' | 'prerequisites'
     'com.ofg.uptodate'              | 'uptodate'          | 'prerequisites'
     outdatedTaskName = 'outdated' + prerequisitiesType.capitalize()
-  }
-
-  void 'test3'() {
-    given: 'plugin is applied'
-    project.apply plugin: 'org.fidata.prerequisites'
-
-    when: 'task is run'
-    project.tasks['updateBuildTools'].execute()
-
-    then: 'no exception thrown'
-    noExceptionThrown()
   }
 
   // helper methods

@@ -5,7 +5,7 @@ This plugin provides prerequisites lifecycle to Gradle.
 
 ## Definitions and the aim of this plugin
 
-Prerequisites are all external artifacts used by our project.
+Prerequisites are all external artifacts used by the project.
 
 Some artifacts should be preinstalled.
 For example, Gradle requires JRE to run under, and even Gradle Wrapper
@@ -26,7 +26,7 @@ In the future we will have separate plugins for Bundler, NPM, Pipenv
 and maybe some more, which will be able to use
 generic prerequisites lifecycle provided by this plugin.
 
-### Types of Prerequisites
+### Types of prerequisites
 
 There are two types of prerequisites:
 *   build tools — prerequisites of build scripts themselves, including
@@ -36,8 +36,8 @@ prerequisites for testing, releasing etc.
 The distinction between them is relevant when we think
 in the terms of produced artifacts.
 If the prerequisite is used by produced artifact
-then the change of prerequisite or version could affect consumers
-and so could be [breaking change](https://conventionalcommits.org).
+then the change of prerequisite or version could affect consumers and so
+could introduce [breaking change](https://conventionalcommits.org).
 Сhanges in build tools prerequisites generally don't produce breaking
 changes (although, there could be exclusions).
 
@@ -45,12 +45,24 @@ changes (although, there could be exclusions).
 
 ### Tasks
 
-This plugin follows Bundler-like style of managing prerequisites.
+The plugin follows Bundler-like style of managing prerequisites.
 
-For each set of dependencies there are three tasks:
-*   install — install prerequisites according to locked versions
-*   update — update locked versions of prerequisites
-*   outdated — list updates for prerequisites versions locked
+For each set of prerequisites there are three tasks:
+
+*   `install` — locks prerequisites' versions if they are not
+    already locked, then downloads and installs locked versions.
+    Note that for tools that could download prerequisites dynamically,
+    like Gradle itself, downloading and installation is not performed.
+    This should be run once at the start of new project
+    or after repository clone
+
+*   `update` — does the same as `install` except that it also updates
+    locked versions
+
+*   `outdated` — prints all prerequisites that have
+    more recent versions available than locked
+
+So, there are 9 tasks in total:
 
 <table><tboby>
 <tr><td>installPrerequisites</td><td>updatePrerequisites</td><td>outdatedPrerequisites</td></tr>
@@ -58,9 +70,18 @@ For each set of dependencies there are three tasks:
 <tr><td>installDependencies </td><td>updateDependencies </td><td>outdatedDependencies </td></tr>
 </tboby></table>
 
-### Gradle dependencies
-Gradle
+### Gradle >= 4.8 dependency locking
 
+For Gradle >= 4.8 plugin uses [built-in dependency locking mechanism](
+https://docs.gradle.org/4.8/userguide/dependency_locking.html),
+no extra setup is needed.
+
+Note that `annotationProcessor` configurations are considered as build
+tools, although, there could be a situation where annotation processor
+generates some API, and change of processor version changes
+that public API.
+If this is your case, please, [report an issue](
+https://github.com/FIDATA/gradle-prerequisites-plugin/issues/new).
 
 ### Integration with other plugins
 
@@ -77,6 +98,12 @@ if they are applied:
     https://github.com/4finance/uptodate-gradle-plugin)
 
 Offerings and pull requests to support other plugins are appreciated.
+
+### Compatibility
+
+*   Gradle >= 4.0
+*   JDK 8
+
 
 
 ------------------------------------------------------------------------

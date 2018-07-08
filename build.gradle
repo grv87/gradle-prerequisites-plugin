@@ -18,8 +18,8 @@
  * permissions and limitations under the License.
  */
 plugins {
-  id 'org.fidata.project.groovy' version '1.2.0'
-  id 'org.fidata.plugin' version '1.2.0'
+  id 'org.fidata.project.groovy' version '1.2.1'
+  id 'org.fidata.plugin' version '1.2.1'
 }
 
 publicReleases = true
@@ -46,9 +46,11 @@ dependencies {
 
 stutter {
   java(8) {
-    compatibleRange '4.0'
+    compatibleRange '2.0'
   }
   java(9) {
-    compatibleRange '4.0'
+    compatibleRange '2.0'
   }
 }
+
+tasks.codenarcCompatTest.disabledRules.add 'JavaIoPackageAccess'

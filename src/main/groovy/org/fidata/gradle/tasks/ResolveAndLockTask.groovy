@@ -6,6 +6,9 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 
+/**
+ * Task to resolve and lock configurations
+ */
 @CompileStatic
 class ResolveAndLockTask extends DefaultTask {
   @Internal
@@ -15,10 +18,18 @@ class ResolveAndLockTask extends DefaultTask {
   void resolveAndLock() {
     assert project.gradle.startParameter.writeDependencyLocks
 
-    project.configurations.each{ Configuration configuration ->
-      if (configuration.canBeResolved && configurationMatcher.call(configuration)) {
-        configuration.resolve()
-      }
+    project.configurations.matching { Configuration configuration ->
+      /*
+       * WORKAROUND:
+       * CodeNarc doesn't work with its configuration locked
+       * https://github.com/gradle/gradle/issues/5894
+       * <grv87 2018-07-08>
+       */
+      configuration.name != 'codenarc' &&
+      configuration.canBeResolved &&
+      configurationMatcher.call(configuration)
+    }.each { Configuration configuration ->
+      configuration.resolve()
     }
   }
 }

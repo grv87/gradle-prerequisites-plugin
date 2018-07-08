@@ -17,22 +17,22 @@
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package org.fidata.gradle.utils
+package org.fidata.gradle.prerequisites
 
+import com.google.common.collect.Comparators
+import com.google.common.collect.Ordering
 import groovy.transform.CompileStatic
 import org.gradle.api.plugins.JavaPlugin
-import sun.awt.image.BufferedImageDevice
-
 import java.util.regex.Matcher
 
 @CompileStatic
-public enum PrerequisiteType {
-  DEPENDENCY ('dependencies'),
-  BUILD_TOOL ('buildTools');
+enum PrerequisiteType {
+  DEPENDENCY('dependencies'),
+  BUILD_TOOL('buildTools')
 
   private final String pluralName
 
-  private PrerequisiteType(pluralName) {
+  private PrerequisiteType(String pluralName) {
     this.pluralName = pluralName
   }
 
@@ -82,4 +82,10 @@ public enum PrerequisiteType {
       ].contains(configurationName)
     ) ? DEPENDENCY : BUILD_TOOL
   }
+
+  /**
+   * Comparator for Optional<PrerequisiteType>
+   */
+  @SuppressWarnings(['FieldName'])
+  public static final Comparator<Optional<PrerequisiteType>> comparator = Comparators.emptiesFirst(Ordering.<PrerequisiteType>naturalOrder())
 }
