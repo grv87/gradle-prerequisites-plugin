@@ -41,7 +41,7 @@ enum PrerequisiteType {
 
   /**
    * Plural name of the prerequisite type that can be used for task names
-   * @param type prerequisite type, null for prerequisites in total
+   * @param type prerequisite type, empty for prerequisites in total
    * @return plural name
    */
   static final String getPluralName(Optional<PrerequisiteType> type) {

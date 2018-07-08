@@ -92,25 +92,20 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         tasks.row(INSTALL),
         tasks.row(OUTDATED)
       ]*.values().flatten()).each { Task runFirstTask ->
-        // Recursively get all task direct and indirect dependencies
+        // Recursively get all direct and indirect dependencies of task
         Set<Task> excludedTasks = []
-        Set<Task> newExcludedTasks = [runFirstTask].toSet()
-        while (true) {
+        Set<Task> veryNewExcludedTasks = [runFirstTask].toSet()
+        while (veryNewExcludedTasks.size() > 0) {
+          Set<Task> newExcludedTasks = veryNewExcludedTasks
           excludedTasks += newExcludedTasks
 
-          Set<Task> veryNewExcludedTasks = []
+          veryNewExcludedTasks = []
           newExcludedTasks.each { Task task ->
             veryNewExcludedTasks.addAll((Collection<Task>)task.taskDependencies.getDependencies(task))
             veryNewExcludedTasks.addAll((Collection<Task>)task.mustRunAfter.getDependencies(task))
             veryNewExcludedTasks.addAll((Collection<Task>)task.shouldRunAfter.getDependencies(task))
           }
           veryNewExcludedTasks -= excludedTasks
-
-          if (veryNewExcludedTasks.size() == 0) {
-            break
-          }
-
-          newExcludedTasks = veryNewExcludedTasks
         }
 
         (project.tasks - excludedTasks).each { Task task ->
