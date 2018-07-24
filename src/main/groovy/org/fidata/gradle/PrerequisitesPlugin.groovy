@@ -120,8 +120,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
    * @param type type of prerequisite
    * @return name of task
    */
-  @SuppressWarnings(['MethodName'])
-  static final String GRADLE_TASK_NAME(PrerequisiteTaskType taskType, PrerequisiteType type) {
+  static final String getGradleTaskName(PrerequisiteTaskType taskType, PrerequisiteType type) {
     "${ taskType }Gradle${ type.pluralName.capitalize() }"
   }
   private void setupIntegrationForInstallUpdateTasks() {
@@ -129,7 +128,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
       project.dependencyLocking.lockAllConfigurations()
 
       PrerequisiteType.nonTotalValues().each { PrerequisiteType type ->
-        ResolveAndLockTask installTask = project.tasks.create(GRADLE_TASK_NAME(INSTALL, type), ResolveAndLockTask)
+        ResolveAndLockTask installTask = project.tasks.create(getGradleTaskName(INSTALL, type), ResolveAndLockTask)
         installTask.configurationMatcher = { Configuration configuration ->
           PrerequisiteType.fromConfigurationName(configuration.name) == type &&
             /*
@@ -142,7 +141,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         }
         tasks.get(INSTALL, type).dependsOn installTask
 
-        ResolveAndLockTask updateTask = project.tasks.create(GRADLE_TASK_NAME(UPDATE, type), ResolveAndLockTask)
+        ResolveAndLockTask updateTask = project.tasks.create(getGradleTaskName(UPDATE, type), ResolveAndLockTask)
         updateTask.configurationMatcher = { Configuration configuration ->
             PrerequisiteType.fromConfigurationName(configuration.name) == type
         }
