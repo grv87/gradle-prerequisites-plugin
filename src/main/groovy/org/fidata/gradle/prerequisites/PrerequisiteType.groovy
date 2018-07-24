@@ -47,6 +47,10 @@ enum PrerequisiteType {
    * @return prerequisite type
    *         null on null configuration name
    */
+  /*
+   * Intendation rule doesn't work correctly ?
+   */
+  @SuppressWarnings(['Indentation'])
   static final PrerequisiteType fromConfigurationName(String configurationName) {
     if (!configurationName) {
       return null
@@ -83,7 +87,7 @@ enum PrerequisiteType {
    * All possible non-null prerequisite types
    * @return list of Optional<PrerequisiteType>
    */
-  static final List<PrerequisiteType> nonTotalValues() { // TODO property (isTotal / Grouping / ...)
+  static final Collection<PrerequisiteType> nonGenericValues() {
     values().findAll { PrerequisiteType type ->
       type != PREREQUISITY
     }

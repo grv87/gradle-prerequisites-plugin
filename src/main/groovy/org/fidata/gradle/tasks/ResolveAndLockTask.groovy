@@ -20,12 +20,6 @@ class ResolveAndLockTask extends DefaultTask {
     assert project.gradle.startParameter.writeDependencyLocks
 
     project.configurations.matching { Configuration configuration ->
-      /*
-       * WORKAROUND:
-       * CodeNarc doesn't work with its configuration locked
-       * https://github.com/gradle/gradle/issues/5894
-       * <grv87 2018-07-08>
-       */
       configuration.canBeResolved &&
       /*
        * WORKAROUND:

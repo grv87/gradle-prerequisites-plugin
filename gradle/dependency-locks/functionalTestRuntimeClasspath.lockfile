@@ -22,6 +22,7 @@ commons-lang:commons-lang:2.4
 commons-logging:commons-logging:1.1.1
 junit:junit:4.12
 nebula.dependency-lock:nebula.dependency-lock.gradle.plugin:6.0.0
+nebula.gradle-scm:nebula.gradle-scm.gradle.plugin:2.2.0
 net.sf.ezmorph:ezmorph:1.0.6
 net.sf.json-lib:json-lib:2.3
 net.sourceforge.nekohtml:nekohtml:1.9.16

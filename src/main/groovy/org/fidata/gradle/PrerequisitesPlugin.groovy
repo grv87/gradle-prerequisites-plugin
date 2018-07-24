@@ -37,7 +37,6 @@ import org.gradle.api.artifacts.Configuration
 import com.google.common.collect.TreeBasedTable
 import com.google.common.collect.Table
 import org.gradle.util.GradleVersion
-import com.google.common.collect.Ordering
 
 /**
  * Provides an environment for a general, language-agnostic project
@@ -81,7 +80,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         project.logger.debug('org.fidata.prerequisites: {} task created', task)
       }
       tasks.get(taskType, PREREQUISITY).dependsOn tasks.row(taskType).findAll { PrerequisiteType type, Task task -> type != PREREQUISITY }.values()
-      PrerequisiteType.nonTotalValues().each { PrerequisiteType type1 ->
+      PrerequisiteType.nonGenericValues().each { PrerequisiteType type1 ->
         tasks.get(taskType, type1).shouldRunAfter(tasks.row(taskType).findAll { PrerequisiteType type2, Task task -> type2 > type1 }.values())
       }
     }
@@ -120,15 +119,19 @@ final class PrerequisitesPlugin implements Plugin<Project> {
    * @param type type of prerequisite
    * @return name of task
    */
-  static final String getGradleTaskName(PrerequisiteTaskType taskType, PrerequisiteType type) {
+  @SuppressWarnings(['MethodName'])
+  static final String GRADLE_TASK_NAME(PrerequisiteTaskType taskType, PrerequisiteType type) {
     "${ taskType }Gradle${ type.pluralName.capitalize() }"
   }
+
+  public static final String STUTTER_WRITE_LOCKS_IF_NOT_EXIST_TASK_NAME = 'stutterWriteLocksIfNotExist'
+
   private void setupIntegrationForInstallUpdateTasks() {
     if (GradleVersion.current() >= GradleVersion.version('4.8')) {
       project.dependencyLocking.lockAllConfigurations()
 
-      PrerequisiteType.nonTotalValues().each { PrerequisiteType type ->
-        ResolveAndLockTask installTask = project.tasks.create(getGradleTaskName(INSTALL, type), ResolveAndLockTask)
+      PrerequisiteType.nonGenericValues().each { PrerequisiteType type ->
+        ResolveAndLockTask installTask = project.tasks.create(GRADLE_TASK_NAME(INSTALL, type), ResolveAndLockTask)
         installTask.configurationMatcher = { Configuration configuration ->
           PrerequisiteType.fromConfigurationName(configuration.name) == type &&
             /*
@@ -141,30 +144,33 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         }
         tasks.get(INSTALL, type).dependsOn installTask
 
-        ResolveAndLockTask updateTask = project.tasks.create(getGradleTaskName(UPDATE, type), ResolveAndLockTask)
+        ResolveAndLockTask updateTask = project.tasks.create(GRADLE_TASK_NAME(UPDATE, type), ResolveAndLockTask)
         updateTask.configurationMatcher = { Configuration configuration ->
-            PrerequisiteType.fromConfigurationName(configuration.name) == type
+          PrerequisiteType.fromConfigurationName(configuration.name) == type
         }
         tasks.get(UPDATE, type).dependsOn updateTask
       }
     }
 
     project.plugins.withId('nebula.dependency-lock') {
+      Class<? extends Task> abstractLockTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('nebula.plugin.dependencylock.tasks.AbstractLockTask')
       Class<? extends Task> generateLockTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('nebula.plugin.dependencylock.tasks.GenerateLockTask')
       Class<? extends Task> updateLockTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('nebula.plugin.dependencylock.tasks.UpdateLockTask')
       Class<? extends Task> saveLockTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('nebula.plugin.dependencylock.tasks.SaveLockTask')
+      Class<? extends Task> commitLockTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('nebula.plugin.dependencylock.tasks.CommitLockTask')
+
+      project.tasks.withType(abstractLockTaskClass) { Task task ->
+        task.group = null
+      }
 
       project.tasks.withType(generateLockTaskClass) { Task task ->
-        task.group = null
-        tasks.get(INSTALL, PREREQUISITY).mustRunAfter task
+        tasks.get(INSTALL, PREREQUISITY).dependsOn task
       }
       project.tasks.withType(updateLockTaskClass) { Task task ->
-        task.group = null
-        tasks.get(UPDATE, PREREQUISITY).mustRunAfter task
+        tasks.get(UPDATE, PREREQUISITY).dependsOn task
       }
       project.tasks.withType(saveLockTaskClass) { Task task ->
-        task.group = null
-        tasks.get(UPDATE, PREREQUISITY).mustRunAfter task
+        tasks.get(UPDATE, PREREQUISITY).dependsOn task
         switch (task.name) {
           case 'saveGlobalLock':
             task.dependsOn project.tasks.withType(updateLockTaskClass).getByName('updateGlobalLock')
@@ -183,6 +189,9 @@ final class PrerequisitesPlugin implements Plugin<Project> {
           dependsOn project.tasks.withType(saveLockTaskClass).getByName('saveLock')
         }
       }
+      project.tasks.withType(commitLockTaskClass) { Task task ->
+        task.enabled = false
+      }
     }
 
     project.plugins.withId('org.ajoberstar.stutter') {
@@ -191,13 +200,13 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         tasks.get(UPDATE, BUILD_TOOL).dependsOn stutterWriteLocksTask
         stutterWriteLocksTask.group = null
 
-        Task stutterWriteLocksIfNotExistTask = project.tasks.create('stutterWriteLocksIfNotExist') { Task task ->
+        Task stutterWriteLocksIfNotExistTask = project.tasks.create(STUTTER_WRITE_LOCKS_IF_NOT_EXIST_TASK_NAME) { Task task ->
           task.with {
             description = 'Generate lock files of Gradle versions to test for compatibility if they not already exist.'
-            actions.addAll stutterWriteLocksTask.actions
             onlyIf {
               project.fileTree(dir: ((DirectoryProperty) project.extensions.getByName('stutter').properties['lockDir']).get(), includes: ['*.*']).empty
             }
+            actions.addAll stutterWriteLocksTask.actions
           }
         }
         tasks.get(INSTALL, BUILD_TOOL).dependsOn stutterWriteLocksIfNotExistTask

@@ -17,8 +17,6 @@
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-import org.fidata.gradle.utils.PluginDependee
-import org.fidata.gradle.utils.PluginDependeeExclusion
 
 dependencies {
   implementation(group: 'com.google.guava', name: 'guava', version: '25.1-jre')

@@ -56,15 +56,15 @@ class PrerequisitesPluginSpec extends Specification {
   // feature methods
 
   @Unroll
-  void 'provides #task task'() {
+  void 'provides #taskName task'() {
     when: 'plugin is applied'
     project.apply plugin: 'org.fidata.prerequisites'
 
-    then: '#task task exists'
-    project.tasks.getByName(task)
+    then: '#taskName task exists'
+    project.tasks.getByName(taskName)
 
     where:
-    task << [
+    taskName << [
       'installPrerequisites', 'updatePrerequisites', 'outdatedPrerequisites',
       'installBuildTools',    'updateBuildTools',    'outdatedBuildTools',
       'installDependencies',  'updateDependencies',  'outdatedDependencies',
@@ -72,7 +72,90 @@ class PrerequisitesPluginSpec extends Specification {
   }
 
   @Unroll
-  void 'integrates update task with #pluginId plugin'() {
+  void 'integrates with nebula.dependency-lock plugin'() {
+    given: '#pluginId plugin is applied'
+    project.apply plugin: pluginId
+
+    when: 'plugin is applied'
+    project.apply plugin: 'org.fidata.prerequisites'
+
+    and: 'project evaluated'
+    project.evaluate()
+
+    then: '#taskName task depends on #pluginTaskName task'
+    Task task = project.tasks[taskName]
+    Task pluginTask = project.tasks[pluginTaskName]
+    task.taskDependencies.getDependencies(task).contains(pluginTask)
+
+    and: '#pluginTaskName task has no group'
+    pluginTask.group == null
+
+    where:
+    pluginId = 'nebula.dependency-lock'
+    pluginTaskName       | taskName               | depends
+    'generateLock'       | 'installPrerequisites' | true
+    'updateLock'         | 'saveLock'             | true
+    'updateGlobalLock'   | 'saveGlobalLock'       | true
+    'saveLock'           | 'updatePrerequisites'  | true
+    'saveGlobalLock'     | 'updatePrerequisites'  | false
+  }
+
+  @Unroll
+  void 'integrates with nebula.dependency-lock plugin with global lock'() {
+    given: 'global lock file exists'
+    testProjectDir.newFile('global.lock').text = ''
+
+    and: '#pluginId plugin is applied'
+    project.apply plugin: pluginId
+
+    when: 'plugin is applied'
+    project.apply plugin: 'org.fidata.prerequisites'
+
+    and: 'project evaluated'
+    project.evaluate()
+
+    then: '#taskName task depends on #pluginTaskName task'
+    Task task = project.tasks[taskName]
+    Task pluginTask = project.tasks[pluginTaskName]
+    task.taskDependencies.getDependencies(task).contains(pluginTask)
+
+    and: '#pluginTaskName task has no group'
+    pluginTask.group == null
+
+    where:
+    pluginId = 'nebula.dependency-lock'
+    pluginTaskName       | taskName              | depends
+    'saveLock'           | 'updatePrerequisites' | false
+    'saveGlobalLock'     | 'updatePrerequisites' | true
+  }
+
+  @Unroll
+  void 'integrates with nebula.dependency-lock plugin turning off #pluginTaskName task'() {
+    given: '#pluginId plugin is applied'
+    project.apply plugin: pluginId
+    and: 'nebula.gradle-scm plugin is applied'
+    project.apply plugin: 'nebula.gradle-scm'
+
+    when: 'plugin is applied'
+    project.apply plugin: 'org.fidata.prerequisites'
+
+    and: 'project evaluated'
+    project.evaluate()
+
+    then: '#pluginTaskName task is disabled'
+    Task pluginTask = project.tasks[pluginTaskName]
+    !pluginTask.enabled
+
+    and: '#pluginTaskName task has no group'
+    pluginTask.group == null
+
+    where:
+    pluginId = 'nebula.dependency-lock'
+    pluginTaskName = 'commitLock'
+  }
+
+  @Unroll
+  void 'integrates with org.ajoberstar.stutter plugin'() {
     given: 'java plugin is applied'
     project.apply plugin: 'java'
     and: '#pluginId plugin is applied'
@@ -81,42 +164,50 @@ class PrerequisitesPluginSpec extends Specification {
     when: 'plugin is applied'
     project.apply plugin: 'org.fidata.prerequisites'
 
-    then: '#updateTaskName task depends on #pluginTaskName task'
-    Task updateTask = project.tasks[updateTaskName]
+    and: 'project evaluated'
+    project.evaluate()
+
+    then: '#taskName task depends on #pluginTaskName task'
+    Task task = project.tasks[taskName]
     Task pluginTask = project.tasks[pluginTaskName]
-    updateTask.taskDependencies.getDependencies(updateTask).contains(pluginTask)
+    task.taskDependencies.getDependencies(task).contains(pluginTask)
 
     and: '#pluginTaskName task has no group'
     pluginTask.group == null
 
     where:
     pluginId = 'org.ajoberstar.stutter'
-    pluginTaskName = 'stutterWriteLocks'
+    pluginTaskName                | taskType
+    'stutterWriteLocksIfNotExist' | 'install'
+    'stutterWriteLocks'           | 'update'
     prerequisitiesType = 'buildTools'
-    updateTaskName = 'update' + prerequisitiesType.capitalize()
+    taskName = taskType + prerequisitiesType.capitalize()
   }
 
   @Unroll
-  void 'integrates outdated task with #pluginId plugin'() {
+  void 'integrates with #pluginId plugin'() {
     given: '#pluginId plugin is applied'
     project.apply plugin: pluginId
 
     when: 'plugin is applied'
     project.apply plugin: 'org.fidata.prerequisites'
 
-    then: '#outdatedTaskName task depends on #pluginTaskName task'
-    Task outdatedTask = project.tasks[outdatedTaskName]
-    Task pluginTask = project.tasks[pluginTaskName]
-    outdatedTask.taskDependencies.getDependencies(outdatedTask).contains(pluginTask)
+    and: 'project evaluated'
+    project.evaluate()
 
-    and: '#pluginTaskName task has no group'
+    then: '#taskName task depends on #pluginTaskName task'
+    Task task = project.tasks[taskName]
+    Task pluginTask = project.tasks[pluginTaskName]
+    task.taskDependencies.getDependencies(task).contains(pluginTask)
+
+    and: '#taskName task has no group'
     pluginTask.group == null
 
     where:
-    pluginId                        | pluginTaskName      | prerequisitiesType
-    'com.github.ben-manes.versions' | 'dependencyUpdates' | 'prerequisites'
-    'com.ofg.uptodate'              | 'uptodate'          | 'prerequisites'
-    outdatedTaskName = 'outdated' + prerequisitiesType.capitalize()
+    pluginId                        | pluginTaskName      | taskType   | prerequisitiesType
+    'com.github.ben-manes.versions' | 'dependencyUpdates' | 'outdated' | 'prerequisites'
+    'com.ofg.uptodate'              | 'uptodate'          | 'outdated' | 'prerequisites'
+    taskName = taskType + prerequisitiesType.capitalize()
   }
 
   // helper methods

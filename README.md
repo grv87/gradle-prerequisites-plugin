@@ -72,7 +72,8 @@ So, there are 9 tasks in total:
 
 ### Gradle >= 4.8 dependency locking
 
-For Gradle >= 4.8 plugin uses [built-in dependency locking mechanism](
+For Gradle >= 4.8 plugin integrates with
+[built-in dependency locking mechanism](
 https://docs.gradle.org/4.8/userguide/dependency_locking.html),
 no extra setup is needed.
 
@@ -86,24 +87,25 @@ https://github.com/FIDATA/gradle-prerequisites-plugin/issues/new).
 ### Integration with other plugins
 
 Plugin automatically integrates with the following plugins
-if they are applied:
-*   [`nebula.dependency-lock`](
-    https://github.com/nebula-plugins/gradle-dependency-lock-plugin)
-*   [`com.github.jruby-gradle`](http://jruby-gradle.org/) set of plugins
-*   [`org.ajoberstar.stutter`](
-    https://github.com/ajoberstar/gradle-stutter)
-*   [`com.github.ben-manes.versions`](
-    https://github.com/ben-manes/gradle-versions-plugin)
-*   [`com.ofg.uptodate`](
-    https://github.com/4finance/uptodate-gradle-plugin)
+if they are applied.
+Some plugins don't provide a way to separate prerequisites to
+build tools and dependencies, such integration is called *generic*.
+
+| Plugin | Integration | Notes |
+| ------ | ----------- | ----- |
+| [`nebula.dependency-lock`](https://github.com/nebula-plugins/gradle-dependency-lock-plugin) | generic | Full integration is possible, but not implemented |
+| [`com.github.jruby-gradle`](http://jruby-gradle.org/) set of plugins                        | full    |                                                   |
+| [`org.ajoberstar.stutter`]([https://github.com/ajoberstar/gradle-stutter)                   | full    |                                                   |
+| [`com.github.ben-manes.versions`](https://github.com/ben-manes/gradle-versions-plugin)      | generic |                                                   |
+| [`com.ofg.uptodate`](https://github.com/4finance/uptodate-gradle-plugin)                    | generic |                                                   |
 
 Offerings and pull requests to support other plugins are appreciated.
 
 ### Compatibility
 
-*   Gradle >= 4.0
+*   Tested with Gradle >= 2.10, but it is probably working
+    with previous versions too
 *   JDK 8
-
 
 
 ------------------------------------------------------------------------

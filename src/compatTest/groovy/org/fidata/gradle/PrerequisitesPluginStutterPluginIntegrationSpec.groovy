@@ -1,6 +1,7 @@
 #!/usr/bin/env groovy
 /*
  * Specification for org.fidata.prerequisites Gradle plugin
+ * for integration with org.ajobestar.stutter plugin
  * Copyright © 2018  Basil Peace
  *
  * This file is part of gradle-prerequisites-plugin.
@@ -19,6 +20,8 @@
  */
 package org.fidata.gradle
 
+import spock.lang.IgnoreIf
+import org.gradle.util.GradleVersion
 import spock.lang.Specification
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.BuildResult
@@ -27,8 +30,10 @@ import org.apache.commons.io.FileUtils
 
 /**
  * Specification for {@link PrerequisitesPlugin} class
+ * for integration with org.ajobestar.stutter plugin
  */
-class PrerequisitesPluginSpec extends Specification {
+@IgnoreIf({ GradleVersion.version(System.getProperty('compat.gradle.version')) < GradleVersion.version('4.3') })
+class PrerequisitesPluginStutterPluginIntegrationSpec extends Specification {
   // fields
   boolean success = false
 
@@ -60,19 +65,47 @@ class PrerequisitesPluginSpec extends Specification {
 
   // feature methods
 
-  void 'plugin applies without exceptions'() {
-    given: 'plugin is applied'
-    new File(testProjectDir, 'build.gradle') << '''\
+  void 'provides stutterWriteLocksIfNotExist task'() {
+    given: 'org.ajoberstar.stutter plugin is applied'
+    and: 'plugin is applied'
+    File buildFile = new File(testProjectDir, 'build.gradle')
+    buildFile << '''\
       plugins {
+        id 'java'
+        id 'org.ajoberstar.stutter' version '0.4.0'
         id 'org.fidata.prerequisites'
+      }
+      stutter {
+        java(8) {
+          compatibleRange '4.8'
+        }
       }
     '''.stripIndent()
 
     when: 'build is run'
-    build()
+    build('stutterWriteLocksIfNotExist')
 
-    then: 'no exception thrown'
-    noExceptionThrown()
+    then: 'stutter lock file is generated'
+    File stutterLockFile = new File(testProjectDir, '.stutter/java8.lock')
+    stutterLockFile.exists()
+
+    and: 'stutter lock file contains requested Gradle version'
+    stutterLockFile.text.split().findAll { !it.startsWith('#') }.contains('4.8')
+
+    when: 'stutter compatibleRange is updated'
+    buildFile << '''\
+      stutter {
+        java(8) {
+          compatibleRange '4.0'
+        }
+      }
+    '''.stripIndent()
+
+    and: 'build is run'
+    build('stutterWriteLocksIfNotExist')
+
+    then: 'stutter lock file does not contains new requested Gradle version'
+    !stutterLockFile.text.split().findAll { !it.startsWith('#') }.contains('4.0')
 
     (success = true) != null
   }

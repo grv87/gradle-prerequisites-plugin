@@ -52,9 +52,12 @@ class PrerequisiteTypeTest {
       ['testCompileOnly',                PrerequisiteType.BUILD_TOOL],
       ['compatTestRuntime',              PrerequisiteType.BUILD_TOOL],
       ['functionalTestRuntimeClasspath', PrerequisiteType.BUILD_TOOL],
+      ['api',                            PrerequisiteType.DEPENDENCY],
+      ['implementation',                 PrerequisiteType.DEPENDENCY],
       ['compile',                        PrerequisiteType.DEPENDENCY],
       ['compileClasspath',               PrerequisiteType.DEPENDENCY],
       ['compileOnly',                    PrerequisiteType.DEPENDENCY],
+      ['runtimeOnly',                    PrerequisiteType.DEPENDENCY],
       // `com.github.jruby-gradle.base` plugin
       ['jrubyExec',                      PrerequisiteType.BUILD_TOOL],
       ['gems',                           PrerequisiteType.DEPENDENCY],

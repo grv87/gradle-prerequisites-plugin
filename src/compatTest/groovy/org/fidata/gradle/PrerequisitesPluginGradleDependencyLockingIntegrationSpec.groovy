@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 /*
  * Specification for org.fidata.prerequisites Gradle plugin
- * for integration with Gradle dependency locking feature
+ * for integration with Gradle dependency locking
  * Copyright © 2018  Basil Peace
  *
  * This file is part of gradle-prerequisites-plugin.
@@ -20,19 +20,20 @@
  */
 package org.fidata.gradle
 
+import spock.lang.IgnoreIf
+import org.gradle.util.GradleVersion
 import spock.lang.Specification
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.BuildResult
 import java.nio.file.Files
-import org.gradle.util.GradleVersion
-import spock.lang.IgnoreIf
+import org.apache.commons.io.FileUtils
 
 /**
  * Specification for {@link PrerequisitesPlugin} class
- * for integration with Gradle dependency locking feature
+ * for integration with Gradle dependency locking
  */
 @IgnoreIf({ GradleVersion.version(System.getProperty('compat.gradle.version')) < GradleVersion.version('4.8') })
-class PrerequisitesPluginGradleSpec extends Specification {
+class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specification {
   // fields
   boolean success = false
 
@@ -77,9 +78,9 @@ class PrerequisitesPluginGradleSpec extends Specification {
      * <grv87 2018-06-27>
      */
     if (success || System.getenv().with { containsKey('CI') || containsKey('JENKINS_URL') }) {
-      repoDir.delete()
-      dependeeProjectDir.delete()
-      testProjectDir.delete()
+      FileUtils.deleteDirectory(repoDir)
+      FileUtils.deleteDirectory(dependeeProjectDir)
+      FileUtils.deleteDirectory(testProjectDir)
     }
   }
 
