@@ -19,8 +19,6 @@
  */
 package org.fidata.gradle.prerequisites
 
-import com.google.common.collect.Comparators
-import com.google.common.collect.Ordering
 import groovy.transform.CompileStatic
 import org.gradle.api.plugins.JavaPlugin
 import java.util.regex.Matcher
@@ -30,22 +28,17 @@ import java.util.regex.Matcher
  */
 @CompileStatic
 enum PrerequisiteType {
+  /**
+   * Prerequisites in total
+   */
+  PREREQUISITY('prerequisites'),
   DEPENDENCY('dependencies'),
   BUILD_TOOL('buildTools')
 
-  private final String pluralName
+  final String pluralName
 
   private PrerequisiteType(String pluralName) {
     this.pluralName = pluralName
-  }
-
-  /**
-   * Plural name of the prerequisite type that can be used for task names
-   * @param type prerequisite type, empty for prerequisites in total
-   * @return plural name
-   */
-  static final String getPluralName(Optional<PrerequisiteType> type) {
-    type.present ? 'prerequisites' : type.get().pluralName
   }
 
   /**
@@ -87,8 +80,12 @@ enum PrerequisiteType {
   }
 
   /**
-   * Comparator for Optional<PrerequisiteType>
+   * All possible non-null prerequisite types
+   * @return list of Optional<PrerequisiteType>
    */
-  @SuppressWarnings(['FieldName'])
-  public static final Comparator<Optional<PrerequisiteType>> comparator = Comparators.emptiesFirst(Ordering.<PrerequisiteType>naturalOrder())
+  static final List<PrerequisiteType> nonTotalValues() { // TODO property (isTotal / Grouping / ...)
+    values().findAll { PrerequisiteType type ->
+      type != PREREQUISITY
+    }
+  }
 }

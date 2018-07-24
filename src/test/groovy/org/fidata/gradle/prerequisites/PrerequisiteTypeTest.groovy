@@ -42,6 +42,7 @@ class PrerequisiteTypeTest {
 
   static Object[][] parametersForTestFromConfigurationName() {
     [
+      // `org.gradle.java` plugin
       ['archives',                       PrerequisiteType.BUILD_TOOL],
       ['codenarc',                       PrerequisiteType.BUILD_TOOL],
       ['annotationProcessor',            PrerequisiteType.BUILD_TOOL],
@@ -54,6 +55,13 @@ class PrerequisiteTypeTest {
       ['compile',                        PrerequisiteType.DEPENDENCY],
       ['compileClasspath',               PrerequisiteType.DEPENDENCY],
       ['compileOnly',                    PrerequisiteType.DEPENDENCY],
+      // `com.github.jruby-gradle.base` plugin
+      ['jrubyExec',                      PrerequisiteType.BUILD_TOOL],
+      ['gems',                           PrerequisiteType.DEPENDENCY],
+      // `com.github.jruby-gradle.jar` plugin
+      ['jrubyJar',                       PrerequisiteType.DEPENDENCY],
+      // `com.github.jruby-gradle.war` plugin
+      ['jrubyWar',                       PrerequisiteType.DEPENDENCY],
     ]
   }
 }

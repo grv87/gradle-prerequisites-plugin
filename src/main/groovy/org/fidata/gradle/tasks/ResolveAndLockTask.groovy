@@ -5,6 +5,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
+import org.gradle.util.GradleVersion
 
 /**
  * Task to resolve and lock configurations
@@ -25,8 +26,17 @@ class ResolveAndLockTask extends DefaultTask {
        * https://github.com/gradle/gradle/issues/5894
        * <grv87 2018-07-08>
        */
-      configuration.name != 'codenarc' &&
       configuration.canBeResolved &&
+      /*
+       * WORKAROUND:
+       * CodeNarc doesn't work with its configuration locked
+       * https://github.com/gradle/gradle/issues/5894
+       * <grv87 2018-07-08>
+       */
+      (
+        GradleVersion.current() >= GradleVersion.version('4.9-rc-2') ||
+        configuration.name != 'codenarc'
+      ) &&
       configurationMatcher.call(configuration)
     }.each { Configuration configuration ->
       configuration.resolve()
