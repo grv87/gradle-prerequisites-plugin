@@ -23,7 +23,7 @@ node {
 	def buildInfo
 	
 	stage ('Clone') {
-        git url: 'https://github.com/FIDATA/gradle-prerequisites-plugin.git'
+        git url: 'https://github.com/FIDATA/gradle-prerequisites-plugin'
     }
 
     stage ('Artifactory configuration') {
@@ -32,6 +32,6 @@ node {
     }
  
     stage ('Release') {
-        rtGradle.run tasks: 'clean release'
+        rtGradle.run tasks: 'clean release' // , switches: 
     }
 }
