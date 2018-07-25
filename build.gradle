@@ -50,3 +50,12 @@ stutter {
 }
 
 tasks.codenarcCompatTest.disabledRules.add 'JavaIoPackageAccess'
+
+pluginBundle.plugins {
+  prerequsitesPlugin {
+    id = 'org.fidata.prerequisites'
+    displayName = 'Gradle Prerequisites plugin'
+    description = 'Provides prerequisites lifecycle to Gradle'
+    tags = ['prerequisites', 'dependencies', 'build tools', 'lock']
+  }
+}
