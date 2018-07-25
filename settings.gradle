@@ -1,9 +1,9 @@
 #!/usr/bin/env groovy
 /*
- * Gradle Settings file for gradle-prerequisites-plugins
+ * Gradle Settings file for gradle-prerequisites-plugin
  * Copyright © 2018  Basil Peace
  *
- * This file is part of gradle-prerequisites-plugins.
+ * This file is part of gradle-prerequisites-plugin.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

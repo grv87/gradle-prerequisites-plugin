@@ -1,8 +1,8 @@
 /*
  * org.fidata.gradle Package Info
- * Copyright © 2017-2018  Basil Peace
+ * Copyright © 2018  Basil Peace
  *
- * This file is part of gradle-base-plugins.
+ * This file is part of gradle-prerequisites-plugin.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
