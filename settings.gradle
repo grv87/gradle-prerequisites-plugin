@@ -30,7 +30,7 @@ pluginManagement {
   }
 }
 
-rootProject.name = 'gradle-prerequsites-plugin'
+rootProject.name = 'gradle-prerequisites-plugin'
 
 buildCache {
   local.enabled = false
