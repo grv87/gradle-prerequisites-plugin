@@ -140,7 +140,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
              * have package scope
              * <grv87 2018-07-08>
              */
-            project.file("gradle/dependency-locks/${ configuration.name }.lockfile").exists()
+            !project.file("gradle/dependency-locks/${ configuration.name }.lockfile").exists()
         }
         tasks.get(INSTALL, type).dependsOn installTask
 

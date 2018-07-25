@@ -90,8 +90,8 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
   // feature methods
 
   void 'locks build tools configurations'() {
-    when: 'buildToolsUpdate --write-locks is run'
-    build 'updateBuildTools', '--write-locks'
+    when: 'installBuildTools --write-locks is run'
+    build 'installBuildTools', '--write-locks'
 
     then: 'testCompile configuration contains dependee 1.0 locked version'
     new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains 'com.example:dependee:1.0'
@@ -103,8 +103,8 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
   }
 
   void 'locks dependencies configurations'() {
-    when: 'dependenciesUpdate is run'
-    build 'updateDependencies', '--write-locks'
+    when: 'installDependencies is run'
+    build 'installDependencies', '--write-locks'
 
     then: 'compile configuration contains dependee 1.0 locked version'
     new File(testProjectDir, 'gradle/dependency-locks/compile.lockfile').readLines().contains 'com.example:dependee:1.0'
@@ -117,7 +117,7 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
 
   void 'updates build tools configurations'() {
     given: 'all prerequisites are locked'
-    build 'updatePrerequisites', '--write-locks'
+    build 'installPrerequisites', '--write-locks'
 
     and: 'there is 2.0 dependee version'
     releaseDependee '2.0'
@@ -135,7 +135,7 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
 
   void 'updates dependencies configurations'() {
     given: 'all prerequisites are locked'
-    build 'updatePrerequisites', '--write-locks'
+    build 'installPrerequisites', '--write-locks'
 
     and: 'there is 2.0 dependee version'
     releaseDependee '2.0'
