@@ -20,6 +20,8 @@
 apply plugin: 'org.fidata.project.groovy'
 apply plugin: 'org.fidata.plugin'
 
+description = 'Provides prerequisites lifecycle to Gradle'
+
 ext.rootDir = '.'
 
 publicReleases = true
@@ -55,7 +57,6 @@ pluginBundle.plugins {
   prerequsitesPlugin {
     id = 'org.fidata.prerequisites'
     displayName = 'Gradle Prerequisites plugin'
-    description = 'Provides prerequisites lifecycle to Gradle'
     tags = ['prerequisites', 'dependencies', 'build tools', 'lock']
   }
 }
