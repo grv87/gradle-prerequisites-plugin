@@ -18,20 +18,18 @@
  * permissions and limitations under the License.
  */
 node {
-	def server
-	def rtGradle
-	def buildInfo
-	
-	stage ('Clone') {
-        git url: 'https://github.com/FIDATA/gradle-prerequisites-plugin'
-    }
+  Object rtGradle
 
-    stage ('Artifactory configuration') {
-        server = Artifactory.server 'FIDATA'
-        rtGradle = Artifactory.newGradleBuild()
-    }
- 
-    stage ('Release') {
-        rtGradle.run tasks: 'clean release' // , switches: 
-    }
+  stage ('Clone') {
+    git url: 'https://github.com/FIDATA/gradle-prerequisites-plugin'
+  }
+
+  stage ('Artifactory configuration') {
+    Artifactory.server 'FIDATA'
+    Artifactory.newGradleBuild()
+  }
+
+  stage ('Release') {
+    rtGradle.run tasks: 'clean release' // , switches:
+  }
 }
