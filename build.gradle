@@ -27,6 +27,14 @@ ext.rootDir = '.'
 license = 'Apache-2.0'
 publicReleases = true
 
+contacts {
+  'grv87@yandex.ru' {
+    moniker 'Basil Peace'
+    github 'grv87'
+    roles 'owner', 'developer'
+  }
+}
+
 apply from: "${ project.ext.rootDir }/gradle/dependencies-compile.gradle"
 
 apply from: "${ project.ext.rootDir }/gradle/gradle-plugin-markers.gradle"
