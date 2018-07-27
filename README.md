@@ -96,6 +96,12 @@ that public API.
 If this is your case, please, [report an issue](
 https://github.com/FIDATA/gradle-prerequisites-plugin/issues/new).
 
+### Gradle Wrapper
+
+This plugin is NOT currently integrated with Gradle Wrapper.
+Since `wrapper` task should be run twice it is done manually.
+It will be implemented in the future - see #4.
+
 ### Integration with other plugins
 
 Plugin automatically integrates with the following plugins
