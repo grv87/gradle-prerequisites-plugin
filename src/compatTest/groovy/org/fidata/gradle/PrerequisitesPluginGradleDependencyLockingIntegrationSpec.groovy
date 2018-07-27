@@ -25,6 +25,8 @@ import org.gradle.util.GradleVersion
 import spock.lang.Specification
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.BuildResult
+import spock.lang.Unroll
+import org.gradle.testkit.runner.UnexpectedBuildFailure
 
 /**
  * Specification for {@link PrerequisitesPlugin} class
@@ -44,7 +46,7 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
   // run before the first feature method
   // void setupSpec() { }
 
-  // run before every feature method
+  // run before every feature methodg
   void setup() {
     releaseDependee '1.0'
 
@@ -147,6 +149,24 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
     !(new File(testProjectDir, 'gradle/dependency-locks/testCompile.lockfile').readLines().contains('com.example:dependee:2.0'))
 
     (success = true) != null
+  }
+
+  @Unroll
+  void 'fails when #taskName run without --write-locks argument'() {
+    when: '#taskName is run'
+    build taskName
+
+    then:
+    thrown(UnexpectedBuildFailure)
+
+    (success = true) != null
+
+    where:
+    taskName << [
+      'installPrerequisites', 'updatePrerequisites',
+      'installBuildTools',    'updateBuildTools',
+      'installDependencies',  'updateDependencies',
+    ]
   }
 
   // helper methods
