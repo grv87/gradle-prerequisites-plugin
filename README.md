@@ -77,6 +77,18 @@ For Gradle >= 4.8 plugin integrates with
 https://docs.gradle.org/4.8/userguide/dependency_locking.html),
 no extra setup is needed.
 
+This lead to the following two requirements for running
+`install` and `update` tasks with Gradle >= 4.8:
+1.  They should be run with `--write-locks` argument.
+2.  They should be run separately from all other tasks,
+    otherwise all other configurations resolved during the run
+    would also get their configurations updated and locked.
+
+There is an inconsistency: `buildSrc` project belongs in whole
+to build tools, but running `updateDependencies`
+updates `buildSrc` dependencies too.
+There is no known way to overcome it.
+
 Note that `annotationProcessor` configurations are considered as build
 tools, although, there could be a situation where annotation processor
 generates some API, and change of processor version changes
