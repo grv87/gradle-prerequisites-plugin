@@ -103,7 +103,7 @@ class PrerequisitesPluginSpec extends Specification {
   @Unroll
   void 'integrates with nebula.dependency-lock plugin with global lock'() {
     given: 'global lock file exists'
-    testProjectDir.newFile('global.lock').text = ''
+    testProjectDir.newFile('global.lock').createNewFile()
 
     and: '#pluginId plugin is applied'
     project.apply plugin: pluginId
