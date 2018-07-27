@@ -101,7 +101,7 @@ build tools and dependencies, such integration is called *generic*.
 
 Offerings and pull requests to support other plugins are appreciated.
 
-### Compatibility
+## Compatibility
 
 *   Tested with Gradle >= 2.10, but it is probably working
     with previous versions too
