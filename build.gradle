@@ -24,6 +24,7 @@ description = 'Provides prerequisites lifecycle to Gradle'
 
 ext.rootDir = '.'
 
+license = 'Apache-2.0'
 publicReleases = true
 
 apply from: "${ project.ext.rootDir }/gradle/dependencies-compile.gradle"
