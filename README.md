@@ -112,7 +112,7 @@ build tools and dependencies, such integration is called *generic*.
 | Plugin | Integration | Notes |
 | ------ | ----------- | ----- |
 | [`nebula.dependency-lock`](https://github.com/nebula-plugins/gradle-dependency-lock-plugin) | generic | Full integration is possible, but not implemented |
-| [`com.github.jruby-gradle`](http://jruby-gradle.org/) set of plugins                        | full    |                                                   |
+| [`com.github.jruby-gradle`](http://jruby-gradle.org/) set of plugins                        | full    | Only with Gradle >= 4.8 dependency locking        |
 | [`org.ajoberstar.stutter`]([https://github.com/ajoberstar/gradle-stutter)                   | full    |                                                   |
 | [`com.github.ben-manes.versions`](https://github.com/ben-manes/gradle-versions-plugin)      | generic |                                                   |
 | [`com.ofg.uptodate`](https://github.com/4finance/uptodate-gradle-plugin)                    | generic |                                                   |
