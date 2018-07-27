@@ -25,8 +25,6 @@ import org.gradle.util.GradleVersion
 import spock.lang.Specification
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.BuildResult
-import java.nio.file.Files
-import org.apache.commons.io.FileUtils
 
 /**
  * Specification for {@link PrerequisitesPlugin} class
@@ -37,9 +35,9 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
   // fields
   boolean success = false
 
-  final File repoDir = Files.createTempDirectory('compatTest').toFile()
-  final File dependeeProjectDir = Files.createTempDirectory('compatTest').toFile()
-  final File testProjectDir = Files.createTempDirectory('compatTest').toFile()
+  final File repoDir = File.createTempDir('compatTest', '-repo')
+  final File dependeeProjectDir = File.createTempDir('compatTest', '-dependee-project')
+  final File testProjectDir = File.createTempDir('compatTest', '-project')
 
   // fixture methods
 
@@ -78,9 +76,9 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
      * <grv87 2018-06-27>
      */
     if (success || System.getenv().with { containsKey('CI') || containsKey('JENKINS_URL') }) {
-      FileUtils.deleteDirectory(repoDir)
-      FileUtils.deleteDirectory(dependeeProjectDir)
-      FileUtils.deleteDirectory(testProjectDir)
+      repoDir.deleteDir()
+      dependeeProjectDir.deleteDir()
+      testProjectDir.deleteDir()
     }
   }
 

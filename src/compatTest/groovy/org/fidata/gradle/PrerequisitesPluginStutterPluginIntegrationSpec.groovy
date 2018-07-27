@@ -25,8 +25,6 @@ import org.gradle.util.GradleVersion
 import spock.lang.Specification
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.BuildResult
-import java.nio.file.Files
-import org.apache.commons.io.FileUtils
 
 /**
  * Specification for {@link PrerequisitesPlugin} class
@@ -37,7 +35,7 @@ class PrerequisitesPluginStutterPluginIntegrationSpec extends Specification {
   // fields
   boolean success = false
 
-  final File testProjectDir = Files.createTempDirectory('compatTest').toFile()
+  final File testProjectDir = File.createTempDir('compatTest', '-project')
 
   // fixture methods
 
@@ -56,7 +54,7 @@ class PrerequisitesPluginStutterPluginIntegrationSpec extends Specification {
      * <grv87 2018-06-27>
      */
     if (success || System.getenv().with { containsKey('CI') || containsKey('JENKINS_URL') }) {
-      FileUtils.deleteDirectory(testProjectDir)
+      testProjectDir.deleteDir()
     }
   }
 

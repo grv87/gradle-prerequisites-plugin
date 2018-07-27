@@ -38,8 +38,6 @@ dependencies {
   functionalTestImplementation group: 'org.ajoberstar.stutter', name: 'org.ajoberstar.stutter.gradle.plugin', version: 'latest.release'
   functionalTestImplementation group: 'com.github.ben-manes', name: 'gradle-versions-plugin', version: 'latest.release'
   functionalTestImplementation group: 'com.ofg', name: 'uptodate-gradle-plugin', version: 'latest.release'
-
-  compatTestImplementation group: 'commons-io', name: 'commons-io', version: 'latest.release'
 }
 
 stutter {
