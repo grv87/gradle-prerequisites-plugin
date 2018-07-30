@@ -26,7 +26,9 @@ plugins {
 
 group = 'org.fidata.gradle'
 
-ext.rootDir = '..'
+ext.rootDir = file('..')
+
+apply from: new File(ext.rootDir, 'buildSrc/gradle/load-properties.gradle')
 
 dependencyLocking.lockAllConfigurations()
 
@@ -53,7 +55,7 @@ dependencies {
   }
 }
 
-apply from: "${ project.ext.rootDir }/gradle/dependencies-compile.gradle"
+apply from: new File(ext.rootDir, 'gradle/dependencies-compile.gradle')
 
 sourceSets.main {
   java.srcDirs = ["${ project.ext.rootDir }/src/main/java"]
@@ -61,4 +63,4 @@ sourceSets.main {
   resources.srcDirs = ["${ project.ext.rootDir }/src/main/resources"]
 }
 
-apply from: "${ project.ext.rootDir }/gradle/gradle-plugin-markers.gradle"
+apply from: new File(ext.rootDir, 'gradle/gradle-plugin-markers.gradle')

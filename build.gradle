@@ -22,7 +22,7 @@ apply plugin: 'org.fidata.plugin'
 
 description = 'Provides prerequisites lifecycle to Gradle'
 
-ext.rootDir = '.'
+ext.rootDir = file('.')
 
 license = 'Apache-2.0'
 publicReleases = true
@@ -35,9 +35,9 @@ contacts {
   }
 }
 
-apply from: "${ project.ext.rootDir }/gradle/dependencies-compile.gradle"
+apply from: new File(ext.rootDir, 'gradle/dependencies-compile.gradle')
 
-apply from: "${ project.ext.rootDir }/gradle/gradle-plugin-markers.gradle"
+apply from: new File(ext.rootDir, 'gradle/gradle-plugin-markers.gradle')
 
 dependencies {
   testImplementation group: 'pl.pragmatists', name: 'JUnitParams', version: 'latest.release'
@@ -59,6 +59,7 @@ stutter {
 }
 
 tasks.codenarcCompatTest.disabledRules.add 'JavaIoPackageAccess'
+tasks.codenarcBuildSrc.disabledRules.add 'JavaIoPackageAccess'
 
 pluginBundle.plugins {
   prerequsitesPlugin {
