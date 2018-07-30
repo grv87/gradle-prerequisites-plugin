@@ -125,6 +125,15 @@ Offerings and pull requests to support other plugins are appreciated.
     with previous versions too
 *   JDK 8
 
+# Development
+
+This is self-applying plugin. That means that build script requires
+the plugin itself (just compiled, not released to the repository).
+So, if there are any errors during compilation or plugin applying,
+Gradle build script just doesn't work.
+If it is a compilation error, you can run `../gradlew build`
+in `buildSrc` directory to figure out what's going on.
+
 
 ------------------------------------------------------------------------
 Copyright © 2018  Basil Peace
