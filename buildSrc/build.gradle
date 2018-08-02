@@ -47,10 +47,10 @@ configurations.all { Configuration configuration ->
 }
 
 dependencies {
-  runtimeOnly(group: 'org.fidata.project.groovy', name: 'org.fidata.project.groovy.gradle.plugin', version: '3.0.0-lazy-conf-SNAPSHOT') {
+  runtimeOnly(group: 'org.fidata.project.groovy', name: 'org.fidata.project.groovy.gradle.plugin', version: '3.0.0+') {
     exclude group: 'org.fidata.gradle', module: 'gradle-prerequisites-plugin'
   }
-  runtimeOnly(group: 'org.fidata.plugin', name: 'org.fidata.plugin.gradle.plugin', version: '3.0.0-lazy-conf-SNAPSHOT') {
+  runtimeOnly(group: 'org.fidata.plugin', name: 'org.fidata.plugin.gradle.plugin', version: '3.0.0+') {
     exclude group: 'org.fidata.gradle', module: 'gradle-prerequisites-plugin'
   }
 }
