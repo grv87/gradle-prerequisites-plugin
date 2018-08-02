@@ -23,12 +23,8 @@ plugins {
 }
 
 description = 'Provides prerequisites lifecycle to Gradle'
-
-ext.rootDir = file('.')
-
 license = 'Apache-2.0'
 publicReleases = true
-
 contacts {
   'grv87@yandex.ru' {
     moniker 'Basil Peace'
@@ -36,6 +32,8 @@ contacts {
     roles 'owner', 'developer'
   }
 }
+
+ext.rootDir = file('.')
 
 apply from: new File(ext.rootDir, 'gradle/dependencies-compile.gradle')
 
