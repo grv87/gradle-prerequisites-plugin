@@ -64,7 +64,6 @@ tasks.named('codenarcBuildSrc').configure { disabledRules.add 'JavaIoPackageAcce
 
 pluginBundle.plugins {
   prerequsitesPlugin {
-    id = 'org.fidata.prerequisites'
     displayName = 'Gradle Prerequisites plugin'
   }
 }
