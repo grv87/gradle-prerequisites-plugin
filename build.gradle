@@ -23,6 +23,7 @@ plugins {
 }
 
 description = 'Provides prerequisites lifecycle to Gradle'
+tags.set(['prerequisites', 'dependencies', 'build tools', 'lock'])
 license = 'Apache-2.0'
 publicReleases = true
 contacts {
@@ -65,6 +66,5 @@ pluginBundle.plugins {
   prerequsitesPlugin {
     id = 'org.fidata.prerequisites'
     displayName = 'Gradle Prerequisites plugin'
-    tags = ['prerequisites', 'dependencies', 'build tools', 'lock']
   }
 }
