@@ -19,32 +19,30 @@
  */
 package org.fidata.gradle
 
-import com.google.common.collect.Table
-import com.google.common.collect.TreeBasedTable
-import groovy.transform.CompileStatic
+import static org.fidata.gradle.prerequisites.PrerequisiteTaskType.INSTALL
+import static org.fidata.gradle.prerequisites.PrerequisiteTaskType.UPDATE
+import static org.fidata.gradle.prerequisites.PrerequisiteTaskType.OUTDATED
+import static org.fidata.gradle.prerequisites.PrerequisiteType.PREREQUISITY
+import static org.fidata.gradle.prerequisites.PrerequisiteType.BUILD_TOOL
 import org.fidata.gradle.prerequisites.PrerequisiteTaskType
 import org.fidata.gradle.prerequisites.PrerequisiteType
 import org.fidata.gradle.tasks.ResolveAndLockTask
+import groovy.transform.CompileStatic
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.tasks.TaskProvider
 import org.gradle.buildinit.tasks.internal.TaskConfiguration
+import org.gradle.api.artifacts.Configuration
+import com.google.common.collect.TreeBasedTable
+import com.google.common.collect.Table
 import org.gradle.util.GradleVersion
-
-import static org.fidata.gradle.prerequisites.PrerequisiteTaskType.INSTALL
-import static org.fidata.gradle.prerequisites.PrerequisiteTaskType.OUTDATED
-import static org.fidata.gradle.prerequisites.PrerequisiteTaskType.UPDATE
-import static org.fidata.gradle.prerequisites.PrerequisiteType.BUILD_TOOL
-import static org.fidata.gradle.prerequisites.PrerequisiteType.PREREQUISITY
 
 /**
  * Provides an environment for a general, language-agnostic project
  */
 @CompileStatic
-final class PrerequisitesPlugin implements Plugin<Project> {
+final class PrerequisitesPluginGradlePre49 implements Plugin<Project> {
   private Project project
 
   void apply(Project project) {
@@ -55,7 +53,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
     setupIntegrationForOutdatedTasks()
   }
 
-  private final Table<PrerequisiteTaskType, PrerequisiteType, TaskProvider<Task>> taskProviders = TreeBasedTable.create()
+  private final Table<PrerequisiteTaskType, PrerequisiteType, Task> tasks = TreeBasedTable.create()
 
   /**
    * Gets name of common task
@@ -72,25 +70,25 @@ final class PrerequisitesPlugin implements Plugin<Project> {
     PrerequisiteTaskType.values().each { PrerequisiteTaskType taskType ->
       PrerequisiteType.values().each { PrerequisiteType type ->
         String taskName = TASK_NAME(taskType, type)
-        TaskProvider taskProvider = project.tasks.register(taskName) { Task task ->
+        Task task = project.tasks.create(taskName) { Task task ->
           task.with {
             group = TaskConfiguration.GROUP
             description = taskType.description.call(type.pluralName)
           }
         }
-        taskProviders.put(taskType, type, taskProvider)
-        project.logger.debug('org.fidata.prerequisites: {} task created', taskProvider)
+        tasks.put(taskType, type, task)
+        project.logger.debug('org.fidata.prerequisites: {} task created', task)
       }
-      taskProviders.get(taskType, PREREQUISITY).configure { Task task -> task.dependsOn taskProviders.row(taskType).findAll { PrerequisiteType type, TaskProvider<Task> taskProvider -> type != PREREQUISITY }.values() }
+      tasks.get(taskType, PREREQUISITY).dependsOn tasks.row(taskType).findAll { PrerequisiteType type, Task task -> type != PREREQUISITY }.values()
       PrerequisiteType.nonGenericValues().each { PrerequisiteType type1 ->
-        taskProviders.get(taskType, type1).configure { Task task -> task.shouldRunAfter(taskProviders.row(taskType).findAll { PrerequisiteType type2, TaskProvider<Task> taskProvider -> type2 > type1 }.values()) }
+        tasks.get(taskType, type1).shouldRunAfter(tasks.row(taskType).findAll { PrerequisiteType type2, Task task -> type2 > type1 }.values())
       }
     }
 
     project.afterEvaluate {
       ((Collection<Task>)[
-        taskProviders.row(INSTALL),
-        taskProviders.row(UPDATE)
+        tasks.row(INSTALL),
+        tasks.row(UPDATE)
       ]*.values().flatten()).each { Task runFirstTask ->
         // Recursively get all direct and indirect dependencies of the task
         Set<Task> excludedTasks = []
@@ -108,7 +106,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
           veryNewExcludedTasks -= excludedTasks
         }
 
-        project.tasks.matching { Task task -> !excludedTasks.contains(task) }.configureEach { Task task ->
+        (project.tasks - excludedTasks).each { Task task ->
           task.mustRunAfter runFirstTask
         }
       }
@@ -133,28 +131,24 @@ final class PrerequisitesPlugin implements Plugin<Project> {
       project.dependencyLocking.lockAllConfigurations()
 
       PrerequisiteType.nonGenericValues().each { PrerequisiteType type ->
-        TaskProvider<ResolveAndLockTask> installTaskProvider = project.tasks.register(GRADLE_TASK_NAME(INSTALL, type), ResolveAndLockTask) { ResolveAndLockTask resolveAndLockTask ->
-          resolveAndLockTask.configurationMatcher = { Configuration configuration ->
-            PrerequisiteType.fromConfigurationName(configuration.name) == type &&
-              /*
+        ResolveAndLockTask installTask = project.tasks.create(GRADLE_TASK_NAME(INSTALL, type), ResolveAndLockTask)
+        installTask.configurationMatcher = { Configuration configuration ->
+          PrerequisiteType.fromConfigurationName(configuration.name) == type &&
+            /*
              * WORKAROUND:
              * org.gradle.internal.locking.LockFileReaderWriter.DEPENDENCY_LOCKING_FOLDER and FILE_SUFFIX
              * have package scope
              * <grv87 2018-07-08>
              */
-              !project.file("gradle/dependency-locks/${ configuration.name }.lockfile").exists()
-          }
-          null
+            !project.file("gradle/dependency-locks/${ configuration.name }.lockfile").exists()
         }
-        taskProviders.get(INSTALL, type).configure { Task task -> task.dependsOn installTaskProvider }
+        tasks.get(INSTALL, type).dependsOn installTask
 
-        TaskProvider<ResolveAndLockTask> updateTaskProvider = project.tasks.register(GRADLE_TASK_NAME(UPDATE, type), ResolveAndLockTask) { ResolveAndLockTask resolveAndLockTask ->
-          resolveAndLockTask.configurationMatcher = { Configuration configuration ->
-            PrerequisiteType.fromConfigurationName(configuration.name) == type
-          }
-          null
+        ResolveAndLockTask updateTask = project.tasks.create(GRADLE_TASK_NAME(UPDATE, type), ResolveAndLockTask)
+        updateTask.configurationMatcher = { Configuration configuration ->
+          PrerequisiteType.fromConfigurationName(configuration.name) == type
         }
-        taskProviders.get(UPDATE, type).configure { Task task -> task.dependsOn updateTaskProvider }
+        tasks.get(UPDATE, type).dependsOn updateTask
       }
     }
 
@@ -165,83 +159,73 @@ final class PrerequisitesPlugin implements Plugin<Project> {
       Class<? extends Task> saveLockTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('nebula.plugin.dependencylock.tasks.SaveLockTask')
       Class<? extends Task> commitLockTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('nebula.plugin.dependencylock.tasks.CommitLockTask')
 
-      project.tasks.withType(abstractLockTaskClass).configureEach { Task abstractLock ->
-        abstractLock.group = null
-        null
+      project.tasks.withType(abstractLockTaskClass) { Task task ->
+        task.group = null
       }
 
-      taskProviders.get(INSTALL, PREREQUISITY).configure { Task task -> task.dependsOn project.tasks.withType(generateLockTaskClass) }
-      taskProviders.get(UPDATE, PREREQUISITY).configure { Task task ->
-        task.with {
-          dependsOn project.tasks.withType(updateLockTaskClass)
-          dependsOn project.tasks.withType(saveLockTaskClass)
-          if (((File) project.tasks.withType(saveLockTaskClass).findByName('saveGlobalLock')?.property('outputLock'))?.exists()) {
-            dependsOn project.tasks.withType(saveLockTaskClass).named('saveGlobalLock')
-          } else {
-            dependsOn project.tasks.withType(saveLockTaskClass).named('saveLock')
-          }
-        }
-        null
+      project.tasks.withType(generateLockTaskClass) { Task task ->
+        tasks.get(INSTALL, PREREQUISITY).dependsOn task
       }
-      project.tasks.withType(saveLockTaskClass).configureEach { Task saveLock ->
-        switch (saveLock.name) {
+      project.tasks.withType(updateLockTaskClass) { Task task ->
+        tasks.get(UPDATE, PREREQUISITY).dependsOn task
+      }
+      project.tasks.withType(saveLockTaskClass) { Task task ->
+        tasks.get(UPDATE, PREREQUISITY).dependsOn task
+        switch (task.name) {
           case 'saveGlobalLock':
-            saveLock.dependsOn project.tasks.withType(updateLockTaskClass).named('updateGlobalLock')
+            task.dependsOn project.tasks.withType(updateLockTaskClass).getByName('updateGlobalLock')
             break
           case 'saveLock':
-            saveLock.dependsOn project.tasks.withType(updateLockTaskClass).named('updateLock')
+            task.dependsOn project.tasks.withType(updateLockTaskClass).getByName('updateLock')
             break
           default:
-            project.logger.error('org.fidata.prerequisites: unknown task {} of type SaveLockTask', saveLock.name)
+            project.logger.error('org.fidata.prerequisites: unknown task {} of type SaveLockTask', task.name)
         }
-        null
       }
-      project.tasks.withType(commitLockTaskClass).configureEach { Task commitLock ->
-        commitLock.enabled = false
-        null
+      tasks.get(UPDATE, PREREQUISITY).with {
+        if (((File)project.tasks.withType(saveLockTaskClass).findByName('saveGlobalLock')?.property('outputLock'))?.exists()) {
+          dependsOn project.tasks.withType(saveLockTaskClass).getByName('saveGlobalLock')
+        } else {
+          dependsOn project.tasks.withType(saveLockTaskClass).getByName('saveLock')
+        }
+      }
+      project.tasks.withType(commitLockTaskClass) { Task task ->
+        task.enabled = false
       }
     }
 
     project.plugins.withId('org.ajoberstar.stutter') {
       project.plugins.withId('java') {
-        TaskProvider<Task> stutterWriteLocksProvider = project.tasks.named('stutterWriteLocks')
-        taskProviders.get(UPDATE, BUILD_TOOL).configure { Task task -> task.dependsOn stutterWriteLocksProvider }
-        stutterWriteLocksProvider.configure { Task stutterWriteLocks ->
-          stutterWriteLocks.group = null
-          null
-        }
+        Task stutterWriteLocksTask = project.tasks.getByName('stutterWriteLocks')
+        tasks.get(UPDATE, BUILD_TOOL).dependsOn stutterWriteLocksTask
+        stutterWriteLocksTask.group = null
 
-        TaskProvider<Task> stutterWriteLocksIfNotExistProvider = project.tasks.register(STUTTER_WRITE_LOCKS_IF_NOT_EXIST_TASK_NAME) { Task task ->
+        Task stutterWriteLocksIfNotExistTask = project.tasks.create(STUTTER_WRITE_LOCKS_IF_NOT_EXIST_TASK_NAME) { Task task ->
           task.with {
             description = 'Generate lock files of Gradle versions to test for compatibility if they not already exist.'
             onlyIf {
               project.fileTree(dir: ((DirectoryProperty) project.extensions.getByName('stutter').properties['lockDir']).get(), includes: ['*.*']).empty
             }
-            actions.addAll stutterWriteLocksProvider.get().actions
+            actions.addAll stutterWriteLocksTask.actions
           }
         }
-        taskProviders.get(INSTALL, BUILD_TOOL).configure { Task task -> task.dependsOn stutterWriteLocksIfNotExistProvider }
+        tasks.get(INSTALL, BUILD_TOOL).dependsOn stutterWriteLocksIfNotExistTask
       }
     }
   }
 
   private void setupIntegrationForOutdatedTasks() {
     project.plugins.withId('com.github.ben-manes.versions') {
-      Class<? extends Task> dependencyUpdatesTaskClass = (Class<? extends Task>)this.class.classLoader.loadClass('com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask')
-      taskProviders.get(OUTDATED, PREREQUISITY).configure { Task task -> task.dependsOn project.tasks.withType(dependencyUpdatesTaskClass) }
-      project.tasks.withType(dependencyUpdatesTaskClass).configureEach { Task task ->
+      project.tasks.withType((Class<? extends Task>)this.class.classLoader.loadClass('com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask')) { Task task ->
         task.group = null
-        null
+        tasks.get(OUTDATED, PREREQUISITY).dependsOn task
       }
     }
 
     project.plugins.withId('com.ofg.uptodate') {
-      TaskProvider<Task> uptodateProvider = project.tasks.named('uptodate')
-      taskProviders.get(OUTDATED, PREREQUISITY).configure { Task task -> task.dependsOn uptodateProvider }
-      uptodateProvider.configure { Task uptodate ->
-        uptodate.group = null
-        null
-      }
+      Task uptodateTask = project.tasks.getByName('uptodate')
+      tasks.get(OUTDATED, PREREQUISITY).dependsOn uptodateTask
+      uptodateTask.group = null
     }
   }
 }
