@@ -37,7 +37,7 @@ class ResolveAndLockTask extends DefaultTask {
   @TaskAction
   void resolveAndLock() {
     if (!project.gradle.startParameter.writeDependencyLocks) {
-      throw new IllegalArgumentException('ResolveAndLockAllTask: this task should be run with `--write-locks` argument')
+      throw new IllegalArgumentException(String.sprintf('%s: this task should be run with `--write-locks` argument', name))
     }
 
     project.configurations.matching { Configuration configuration ->
