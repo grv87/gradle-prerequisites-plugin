@@ -58,8 +58,8 @@ stutter {
   }
 }
 
-tasks.codenarcCompatTest.disabledRules.add 'JavaIoPackageAccess'
-tasks.codenarcBuildSrc.disabledRules.add 'JavaIoPackageAccess'
+tasks.named('codenarcCompatTest').configure { disabledRules.add 'JavaIoPackageAccess' }
+tasks.named('codenarcBuildSrc').configure { disabledRules.add 'JavaIoPackageAccess' }
 
 pluginBundle.plugins {
   prerequsitesPlugin {
