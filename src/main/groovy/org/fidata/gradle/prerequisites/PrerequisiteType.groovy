@@ -50,7 +50,7 @@ enum PrerequisiteType {
   /*
    * Intendation rule doesn't work correctly ?
    */
-  @SuppressWarnings(['Indentation'])
+  @SuppressWarnings('Indentation')
   static final PrerequisiteType fromConfigurationName(String configurationName) {
     if (!configurationName) {
       return null
