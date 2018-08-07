@@ -61,7 +61,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
    * @param type type of prerequisite
    * @return name of task
    */
-  @SuppressWarnings(['MethodName'])
+  @SuppressWarnings('MethodName')
   static final String TASK_NAME(PrerequisiteTaskType taskType, PrerequisiteType type) {
     "$taskType${ type.pluralName.capitalize() }"
   }
@@ -119,7 +119,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
    * @param type type of prerequisite
    * @return name of task
    */
-  @SuppressWarnings(['MethodName'])
+  @SuppressWarnings('MethodName')
   static final String GRADLE_TASK_NAME(PrerequisiteTaskType taskType, PrerequisiteType type) {
     "${ taskType }Gradle${ type.pluralName.capitalize() }"
   }
