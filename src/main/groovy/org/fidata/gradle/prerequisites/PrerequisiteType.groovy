@@ -21,7 +21,6 @@ package org.fidata.gradle.prerequisites
 
 import groovy.transform.CompileStatic
 import org.gradle.api.plugins.JavaPlugin
-import java.util.regex.Matcher
 
 /**
  * Enum of different prerequisite types
@@ -69,8 +68,9 @@ enum PrerequisiteType {
         JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME,
         JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME,
       ].any { String dependencyConfigurationName ->
-        Matcher matcher = (configurationName =~ /(?i)^(.*)$dependencyConfigurationName$/)
-        matcher.matches() && !(matcher.group(1) ==~ /(?i).*test/)
+        (configurationName =~ /(?i)^(.*)$dependencyConfigurationName$/).with {
+          matches() && !(group(1) ==~ /(?i).*test/)
+        }
       } ||
       [
         // `com.github.jruby-gradle.base` plugin
