@@ -39,8 +39,6 @@ org.jetbrains.kotlin:kotlin-stdlib-jre7:1.2.10
 org.jetbrains.kotlin:kotlin-stdlib:1.2.10
 org.jetbrains:annotations:13.0
 org.multiverse:multiverse-core:0.7.0
-org.slf4j:slf4j-api:1.7.25
-org.slf4j:slf4j-simple:1.7.25
 org.spockframework:spock-core:1.1-groovy-2.4
 xerces:xercesImpl:2.9.1
 xml-resolver:xml-resolver:1.2
