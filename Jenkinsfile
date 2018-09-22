@@ -162,7 +162,7 @@ node {
                   ].collect { "${ it }.html" }.join(', '), // TODO: read from directory ?
                   allowMissing: true,
                   keepAll: true,
-                  alwaysLinkToLastBuild: false /* TODO: determine if we are on develop HEAD */
+                  alwaysLinkToLastBuild: env.BRANCH_NAME == 'develop' && !env.CHANGE_ID
                 ])
                 publishHTML(target: [
                   reportName: 'Test',
@@ -170,7 +170,7 @@ node {
                   reportFiles: 'index.html',
                   allowMissing: true,
                   keepAll: true,
-                  alwaysLinkToLastBuild: false /* TODO: determine if we are on develop HEAD */
+                  alwaysLinkToLastBuild: env.BRANCH_NAME == 'develop' && !env.CHANGE_ID
                 ])
                 publishHTML(target: [
                   reportName: 'FunctionalTest',
@@ -178,7 +178,7 @@ node {
                   reportFiles: 'index.html',
                   allowMissing: true,
                   keepAll: true,
-                  alwaysLinkToLastBuild: false /* TODO: determine if we are on develop HEAD */
+                  alwaysLinkToLastBuild: env.BRANCH_NAME == 'develop' && !env.CHANGE_ID
                 ])
                 publishHTML(target: [
                   reportName: 'CompatTest',
@@ -192,7 +192,7 @@ node {
                       .join(', '),
                   allowMissing: true,
                   keepAll: true,
-                  alwaysLinkToLastBuild: false /* TODO: determine if we are on develop HEAD */
+                  alwaysLinkToLastBuild: env.BRANCH_NAME == 'develop' && !env.CHANGE_ID
                 ])
               }
             }
