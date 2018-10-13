@@ -148,11 +148,6 @@ node {
                     [parserName: 'JavaDoc Tool'],
                   ]
                 )
-                junit(
-                  testResults: 'build/reports/**/*.xml',
-                  allowEmptyResults: true,
-                  keepLongStdio: true,
-                )
                 publishHTML(target: [
                   reportName: 'CodeNarc',
                   reportDir: 'build/reports/html/codenarc',
@@ -167,6 +162,11 @@ node {
                   keepAll: true,
                   alwaysLinkToLastBuild: env.BRANCH_NAME == 'develop' && !env.CHANGE_ID
                 ])
+                junit(
+                  testResults: 'build/reports/xml/**/*.xml',
+                  allowEmptyResults: true,
+                  keepLongStdio: true,
+                )
                 publishHTML(target: [
                   reportName: 'Test',
                   reportDir: 'build/reports/html/test',
@@ -203,7 +203,7 @@ node {
               try {
                 timeout(time: 5, unit: 'MINUTES') {
                   milestone()
-                  lock('gradle-prerequisites-plugin/gh-pages') {
+                  lock('gradle-prerequisites-plugin@gh-pages') {
                     buildInfo = rtGradle.run tasks: 'release', switches: gradleSwitches, buildInfo: buildInfo
                   }
                 }

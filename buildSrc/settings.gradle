@@ -20,7 +20,7 @@
 pluginManagement {
   repositories {
     maven {
-      url 'https://fidata.jfrog.io/fidata/plugins-snapshot/'
+      url 'https://fidata.jfrog.io/fidata/plugins-release/'
       credentials {
         File gradlePropertiesFile = new File(file('..'), Project.GRADLE_PROPERTIES)
         if (gradlePropertiesFile.exists()) {
