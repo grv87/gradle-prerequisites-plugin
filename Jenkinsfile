@@ -21,63 +21,61 @@ import org.jfrog.hudson.pipeline.types.ArtifactoryServer
 import org.jfrog.hudson.pipeline.types.GradleBuild
 import org.jfrog.hudson.pipeline.types.buildInfo.BuildInfo
 
+//noinspection GroovyUnusedAssignment
 @SuppressWarnings(['UnusedVariable', 'NoDef', 'VariableTypeRequired'])
-@Library('jenkins-pipeline-shared-library@v1.1.0') dummy
-
-properties([
-  disableConcurrentBuilds()
-])
+@Library('jenkins-pipeline-shared-library@v1.2.0') dummy
 
 node {
-  GradleBuild rtGradle
-
-  stage ('Checkout') {
-    List<Map<String, ? extends Serializable>> extensions = [
-      [$class: 'WipeWorkspace'],
-      [$class: 'CloneOption', noTags: false, shallow: false],
-    ]
-    if (!env.CHANGE_ID) {
-      extensions.add([$class: 'LocalBranch', localBranch: env.BRANCH_NAME])
-    }
-    checkout([
-      $class: 'GitSCM',
-      branches: scm.branches,
-      doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
-      extensions: extensions,
-      userRemoteConfigs: scm.userRemoteConfigs,
-    ])
-    gitAuthor()
-  }
-
-  ArtifactoryServer server = Artifactory.server 'FIDATA'
-  rtGradle = Artifactory.newGradleBuild()
-  rtGradle.useWrapper = true
-  rtGradle.usesPlugin = true
-
-  /*
-   * WORKAROUND:
-   * Disabling Gradle Welcome message
-   * should be done in fidata_build_toolset.
-   * See https://github.com/FIDATA/infrastructure/issues/85
-   * <grv87 2018-09-21>
-   */
-  /*
-   * WORKAROUND:
-   * Gradle can't provide console with colors but no other rich features.
-   * So, we use plain console for now
-   * https://github.com/gradle/gradle/issues/6843
-   * <grv87 2018-09-21>
-   */
-  /*
-   * WORKAROUND:
-   * Build cache should be turned on in gradle.properties
-   * as soon as we move sensitive properties to separate place
-   * and put gradle.properties under version control
-   * <grv87 2018-09-22>
-   */
-  String gradleSwitches = '-Dorg.gradle.internal.launcher.welcomeMessageEnabled=false --console=plain --info --warning-mode all --full-stacktrace --build-cache'
-
   ansiColor {
+    GradleBuild rtGradle
+
+    stage ('Checkout') {
+      List<Map<String, ? extends Serializable>> extensions = [
+        [$class: 'WipeWorkspace'],
+        [$class: 'CloneOption', noTags: false, shallow: false],
+      ]
+      if (!env.CHANGE_ID) {
+        extensions.add([$class: 'LocalBranch', localBranch: env.BRANCH_NAME])
+      }
+      checkout([
+        $class: 'GitSCM',
+        branches: scm.branches,
+        doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+        extensions: extensions,
+        userRemoteConfigs: scm.userRemoteConfigs,
+      ])
+      gitAuthor()
+      configureGrape('Artifactory')
+    }
+
+    ArtifactoryServer server = Artifactory.server 'FIDATA'
+    rtGradle = Artifactory.newGradleBuild()
+    rtGradle.useWrapper = true
+    rtGradle.usesPlugin = true
+
+    /*
+     * WORKAROUND:
+     * Disabling Gradle Welcome message
+     * should be done in fidata_build_toolset.
+     * See https://github.com/FIDATA/infrastructure/issues/85
+     * <grv87 2018-09-21>
+     */
+    /*
+     * WORKAROUND:
+     * Gradle can't provide console with colors but no other rich features.
+     * So, we use plain console for now
+     * https://github.com/gradle/gradle/issues/6843
+     * <grv87 2018-09-21>
+     */
+    /*
+     * WORKAROUND:
+     * Build cache should be turned on in gradle.properties
+     * as soon as we move sensitive properties to separate place
+     * and put gradle.properties under version control
+     * <grv87 2018-09-22>
+     */
+    String gradleSwitches = '-Dorg.gradle.internal.launcher.welcomeMessageEnabled=false --no-daemon --console=plain --info --warning-mode all --full-stacktrace --build-cache'
+
     withGpgScope("${ pwd() }/.scoped-gpg", 'GPG', 'GPG_KEY_PASSWORD') { String fingerprint ->
       withEnv([
         "ORG_GRADLE_PROJECT_gpgKeyId=$fingerprint",
@@ -89,11 +87,11 @@ node {
           string(credentialsId: 'GPG_KEY_PASSWORD', variable: 'ORG_GRADLE_PROJECT_gpgKeyPassphrase'),
           usernamePassword(credentialsId: 'Bintray', usernameVariable: 'ORG_GRADLE_PROJECT_bintrayUser', passwordVariable: 'ORG_GRADLE_PROJECT_bintrayAPIKey'),
         ]) {
-          BuildInfo buildInfo
+          BuildInfo buildInfo = null
           try {
-            stage('Clean') {
+            stage('Generate Changelog') {
               timeout(time: 5, unit: 'MINUTES') {
-                buildInfo = rtGradle.run tasks: 'clean', switches: gradleSwitches
+                buildInfo = rtGradle.run tasks: 'generateChangelog', switches: gradleSwitches, buildInfo: buildInfo
                 /*
                  * TODO:
                  * Move these filters into separate library
@@ -112,11 +110,22 @@ node {
                 buildInfo.env.filter.addExclude('*Token')
                 buildInfo.env.collect()
               }
+              dir('build/changelog') {
+                exec 'pandoc --from=markdown_github --to=html --output=CHANGELOG.html CHANGELOG.md'
+              }
+              publishHTML(target: [
+                reportName: 'CHANGELOG',
+                reportDir: 'build/changelog',
+                reportFiles: 'CHANGELOG.html',
+                allowMissing: false,
+                keepAll: true,
+                alwaysLinkToLastBuild: env.BRANCH_NAME == 'develop' && !env.CHANGE_ID
+              ])
             }
             stage('Assemble') {
               try {
                 timeout(time: 5, unit: 'MINUTES') {
-                  rtGradle.run tasks: 'assemble', switches: gradleSwitches, buildInfo: buildInfo
+                  buildInfo = rtGradle.run tasks: 'assemble', switches: gradleSwitches, buildInfo: buildInfo
                 }
               } finally {
                 warnings(
@@ -130,7 +139,7 @@ node {
             stage('Check') {
               try {
                 timeout(time: 15, unit: 'MINUTES') {
-                  rtGradle.run tasks: 'check', switches: gradleSwitches, buildInfo: buildInfo
+                  buildInfo = rtGradle.run tasks: 'check', switches: gradleSwitches, buildInfo: buildInfo
                 }
               } finally {
                 warnings(
@@ -141,12 +150,6 @@ node {
                 )
                 junit(
                   testResults: 'build/reports/**/*.xml',
-                  allowEmptyResults: true,
-                  keepLongStdio: true,
-                )
-                // TODO
-                junit(
-                  testResults: 'build/test-results/**/*.xml',
                   allowEmptyResults: true,
                   keepLongStdio: true,
                 )
@@ -199,7 +202,10 @@ node {
             stage('Release') {
               try {
                 timeout(time: 5, unit: 'MINUTES') {
-                  rtGradle.run tasks: 'release', switches: gradleSwitches, buildInfo: buildInfo
+                  milestone()
+                  lock('gradle-prerequisites-plugin/gh-pages') {
+                    buildInfo = rtGradle.run tasks: 'release', switches: gradleSwitches, buildInfo: buildInfo
+                  }
                 }
               } finally {
                 warnings(

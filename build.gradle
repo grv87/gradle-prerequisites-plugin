@@ -24,7 +24,9 @@ plugins {
 
 description = 'Provides prerequisites lifecycle to Gradle'
 tags.set(['prerequisites', 'dependencies', 'build tools', 'lock'])
+//noinspection GroovyUnusedAssignment
 license = 'Apache-2.0'
+//noinspection GroovyUnusedAssignment
 publicReleases = true
 contacts {
   'grv87@yandex.ru' {
