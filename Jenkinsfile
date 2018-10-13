@@ -203,7 +203,7 @@ node {
               try {
                 timeout(time: 5, unit: 'MINUTES') {
                   milestone()
-                  lock('gradle-prerequisites-plugin/gh-pages') {
+                  lock('gradle-prerequisites-plugin@gh-pages') {
                     buildInfo = rtGradle.run tasks: 'release', switches: gradleSwitches, buildInfo: buildInfo
                   }
                 }
