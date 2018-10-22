@@ -47,11 +47,13 @@ configurations.all { Configuration configuration ->
 }
 
 dependencies {
-  runtimeOnly(group: 'org.fidata.project.groovy', name: 'org.fidata.project.groovy.gradle.plugin', version: '4.1.1') {
-    exclude group: 'org.fidata.gradle', module: 'gradle-prerequisites-plugin'
-  }
-  runtimeOnly(group: 'org.fidata.plugin', name: 'org.fidata.plugin.gradle.plugin', version: '4.1.1') {
-    exclude group: 'org.fidata.gradle', module: 'gradle-prerequisites-plugin'
+  runtimeOnly(group: 'org.fidata.project.groovy', name: 'org.fidata.project.groovy.gradle.plugin', version: '4.1.1')
+  runtimeOnly(group: 'org.fidata.plugin', name: 'org.fidata.plugin.gradle.plugin', version: '4.1.1')
+}
+
+configurations.all {
+  resolutionStrategy.dependencySubstitution {
+    substitute module('org.fidata.gradle:gradle-prerequisites-plugin') with project(':')
   }
 }
 
