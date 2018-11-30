@@ -138,7 +138,7 @@ node {
             }
             stage('Check') {
               try {
-                timeout(time: 15, unit: 'MINUTES') {
+                timeout(time: 20, unit: 'MINUTES') {
                   buildInfo = rtGradle.run tasks: 'check', switches: gradleSwitches, buildInfo: buildInfo
                 }
               } finally {
