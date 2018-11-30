@@ -32,7 +32,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.buildinit.tasks.internal.TaskConfiguration
 import org.gradle.api.artifacts.Configuration
 import com.google.common.collect.TreeBasedTable
 import com.google.common.collect.Table
@@ -72,7 +71,7 @@ final class PrerequisitesPlugin implements Plugin<Project> {
         String taskName = TASK_NAME(taskType, type)
         Task task = project.tasks.create(taskName) { Task task ->
           task.with {
-            group = TaskConfiguration.GROUP
+            group = 'Build Setup' /* TaskConfiguration.GROUP was removed in Gradle 5.0 */
             description = taskType.description.call(type.pluralName)
           }
         }
