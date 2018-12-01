@@ -100,7 +100,9 @@ https://github.com/FIDATA/gradle-prerequisites-plugin/issues/new).
 
 This plugin is NOT currently integrated with Gradle Wrapper.
 Since `wrapper` task should be run twice it is done manually.
-It will be implemented in the future - see #4.
+This is [known Gradle limitation](
+https://github.com/gradle/gradle/issues/884).
+It could be implemented in the future, see #4.
 
 ### Integration with other plugins
 
