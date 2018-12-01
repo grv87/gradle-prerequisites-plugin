@@ -156,7 +156,7 @@ class PrerequisitesPluginGradleDependencyLockingIntegrationSpec extends Specific
     when: '#taskName is run'
     build taskName
 
-    then:
+    then: 'build is failed'
     thrown(UnexpectedBuildFailure)
 
     (success = true) != null
