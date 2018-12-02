@@ -28,7 +28,7 @@ import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Unroll
 
 /**
- * Specification for {@link org.fidata.gradle.PrerequisitesPlugin} class
+ * Specification for {@link PrerequisitesPlugin} class
  */
 class PrerequisitesPluginSpec extends Specification {
   // fields
