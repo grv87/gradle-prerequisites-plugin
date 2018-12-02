@@ -125,7 +125,7 @@ Offerings and pull requests to support other plugins are appreciated.
 
 *   Tested with Gradle >= 2.10, but it is probably working
     with previous versions too
-*   JDK 8
+*   Built and tested with JDK 8
 
 # Development
 
