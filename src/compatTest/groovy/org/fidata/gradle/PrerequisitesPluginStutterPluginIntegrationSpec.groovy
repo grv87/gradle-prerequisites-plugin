@@ -2,7 +2,7 @@
 /*
  * Specification for org.fidata.prerequisites Gradle plugin
  * for integration with org.ajobestar.stutter plugin
- * Copyright © 2018  Basil Peace
+ * Copyright ©  Basil Peace
  *
  * This file is part of gradle-prerequisites-plugin.
  *

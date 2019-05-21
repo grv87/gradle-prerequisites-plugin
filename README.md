@@ -138,7 +138,7 @@ in `buildSrc` directory to figure out what's going on.
 
 
 ------------------------------------------------------------------------
-Copyright © 2018  Basil Peace
+Copyright ©  Basil Peace
 
 This file is part of gradle-prerequisites-plugin.
 
